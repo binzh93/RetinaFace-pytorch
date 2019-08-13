@@ -13,6 +13,7 @@ cfg.MIN_FACE = 0
 cfg.COLOR_JITTERING = 0.125
 cfg.USE_FLIPED = True
 
+# /home/shanma/Workspace/zhubin/RetinaFace/data/retinaface/images/0--Parade/0_Parade_marchingband_1_849.jpg
 
 
 def get_roidb(image_info, data_path):
@@ -20,6 +21,7 @@ def get_roidb(image_info, data_path):
     
     for k, v in image_info.items():
         image_path = osp.join(data_path, k)
+        # print(image_path)
         image = cv2.imread(image_path) # (H, W, C)
 
         boxes = []

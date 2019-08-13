@@ -3,6 +3,8 @@ import torch.nn as nn
 import numpy as np
 import cv2
 import torch.utils.data as data
+import torch.backends.cudnn as cudnn
+
 
 from models.model_builder import RetinaFace
 from models.retina_face import *
@@ -16,13 +18,13 @@ import torch.optim as optim
 import argparse
 
 parser = argparse.ArgumentParser(description='RetinaFace')
-parser.add_argument('--batch_size', default=32, type=int, help='Batch size for training')
+parser.add_argument('--batch_size', default=2, type=int, help='Batch size for training')
 
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
 parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="data/widerface/", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="data/widerface/", help='Dataset root directory path')
+parser.add_argument('--root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface/train", help='Dataset root directory path')
 parser.add_argument('--lr', '--learning-rate', default=1e-1, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
@@ -79,11 +81,15 @@ anchors = Prior_Box()
 
 with torch.no_grad():
     anchors = anchors.forward()
-    anchors = anchors.cuda()
+    # anchors = anchors.cuda()
 
 def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma, end_epoch, cfg):
     net.train()
-    for i, (img, boxes, landmarks) in enumerate(train_loader):
+    print(len(train_loader))
+    print("=======")
+    for i, xxx in enumerate(train_loader):
+
+        imgs, boxes, landmarks = xxx
         imgs = imgs.cuda()
 
         with torch.no_grad():
@@ -104,7 +110,8 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
 
     
 def main():
-
+    backbone = resnet50()
+    net = RetinaFace(backbone)
     if torch.cuda.is_available():
         if args.cuda:
             # torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -116,13 +123,13 @@ def main():
             # net.to(device)
             cudnn.benchmark = True
     
-    net = RetinaFace()
+    
             
 
     train_dataset = WiderFaceDetection(root_path=args.root, data_path=args.dataset_root, phase="train", 
                                        dataset_name="WiderFace", transform=None)
     train_loader = data.DataLoader(train_dataset, args.batch_size, shuffle=True, num_workers=args.num_workers) # , collate_fn=detection_collate)
-    
+    print("sucess train_loader")
 
     
     # priorbox = PriorBox(anchors(cfg))

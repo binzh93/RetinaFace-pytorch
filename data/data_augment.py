@@ -56,7 +56,8 @@ def crop_img(roi):
         landmarks = roi['landmarks'].copy()
         landmarks = landmarks * im_scale
     
-    LIMITED_TIMES = 25
+    # LIMITED_TIMES = 25
+    LIMITED_TIMES = 1000
     retry = 0
     while retry<LIMITED_TIMES:
         # cv2 shape ==> (H, W, C)
@@ -80,6 +81,7 @@ def crop_img(roi):
         valid_boxes = []
 
         for idx in range(boxes_new.shape[0]):
+            # print("crop-----------")
             box = boxes_new[idx]
 
             centerx = (box[0]+box[2])/2
@@ -110,8 +112,9 @@ def crop_img(roi):
                 'blur': roi['blur'].copy(),
                 'flipped': roi['flipped']
             }
-            if "image_data" in roi:
-                roi_crop['image_data'] = roi['image_data'].copy()
+            # if "image_data" in roi:
+            #     roi_crop['image_data'] = roi['image_data'].copy()
+            roi_crop['image_data'] = image
             if cfg.FACE_LANDMARK:
                 # landmarks = valid_landmarks
                 roi_crop['landmarks'] = valid_landmarks
@@ -119,8 +122,8 @@ def crop_img(roi):
         retry += 1
     
     
-    if cfg.COLOR_JITTERING>0.0:
-        pass
+    # if cfg.COLOR_JITTERING>0.0:
+    #     pass
         # im = im.astype(np.float32)
         # im = color_aug(im, config.COLOR_JITTERING)
     # im_tensor = transform(im, config.PIXEL_MEANS, config.PIXEL_STDS, config.PIXEL_SCALE)
@@ -128,7 +131,7 @@ def crop_img(roi):
     # im_info = [im_tensor.shape[2], im_tensor.shape[3], im_scale]
     # new_rec['im_info'] = np.array(im_info, dtype=np.float32)
     # processed_roidb.append(new_rec)
-    return 0
+    return roi_crop
             
 
 # class Resize(object):

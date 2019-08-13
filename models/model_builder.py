@@ -1,10 +1,10 @@
 import torch.nn as nn
 import numpy as np
 import cv2
-# from models.model_helper import FPN, ContextModule
-# from models.retina_face import *
-from model_helper import FPN, ContextModule
-from retina_face import *
+from models.model_helper import FPN, ContextModule
+from models.retina_face import *
+# from model_helper import FPN, ContextModule
+# from retina_face import *
 
 from easydict import EasyDict as edict
 __C = edict()

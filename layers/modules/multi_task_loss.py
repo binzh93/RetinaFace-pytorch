@@ -11,7 +11,7 @@ from easydict import EasyDict as edict
 __C = edict()
 cfg = __C
 cfg.RPN_NEGATIVE_OVERLAP = 0.3
-config.RPN_POSITIVE_OVERLAP = 0.5
+cfg.RPN_POSITIVE_OVERLAP = 0.5
 
 cfg.RPN_ENABLE_OHEM = 1
 cfg.FACE_LANDMARK = True
@@ -22,7 +22,7 @@ cfg.USE_OCCLUSION = False
 
 
 
-class MultiTaskLoss(nnn.Module):
+class MultiTaskLoss(nn.Module):
     def __init__(self, num_classes=2):
         super(MultiTaskLoss, self).__init__()
         anchor = 1

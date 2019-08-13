@@ -3,8 +3,9 @@ import os
 import os.path as osp
 import numpy as np
 import cv2
-
-from roidb import get_roidb
+import torch
+from .data_augment import *
+from .roidb import get_roidb
 
 # landmark  -1: no landmark
 # landmark  1.0: occlusion 
@@ -27,7 +28,7 @@ class FaceTransform(object):
         boxes = []
         landmarks = []
         labels = 1
-        return 
+        return None
 
 
 
@@ -36,13 +37,15 @@ class WiderFaceDetection(data.Dataset):
     def __init__(self, root_path, data_path, phase="train", dataset_name="WiderFace", transform=None):
         self.name = dataset_name
         self.root_path = root_path
-        self.target_transform = FaceTransform()
+        # self.target_transform = FaceTransform()
+        self.transform = transform
 
         self.data_path = osp.join(data_path, "images")
         txt_file = osp.join(self.root_path, phase, "label.txt")
 
         self.image_info = {}
         self.load_info(txt_file)
+        # print(self.image_info)
 
         self.roidb = get_roidb(self.image_info, self.data_path)
         print("WiderFaceDetection:", len(self.roidb))
@@ -50,7 +53,12 @@ class WiderFaceDetection(data.Dataset):
         
     
     def __getitem__(self, index):
-        pull_item(index)
+        image, boxes, landmarks = self.pull_item(index)
+        print("dasdsa")
+        print(image.shape)
+        print(boxes.shape)
+        # print(landmarks.shape)
+        return image, boxes, landmarks
         
 
 
@@ -76,12 +84,16 @@ class WiderFaceDetection(data.Dataset):
 
     def pull_item(self, idx):
         roi = self.roidb[idx]
+        roi = crop_img(roi)
 
         if self.transform is not None:
             roi = self.transform(roi)
-        return roi['']
-
-
+        # image = roi['image_data']
+        # image = cv2.imread(roi['image_path'])
+        image = roi['image_data']
+        image = image[:, :, (2, 1, 0)]  # to rgb
+        image = torch.from_numpy(image).permute(2, 0, 1)
+        return image, roi['boxes'], roi['landmarks']
 
     # def get_roidb(self):
     #     # roidb = []
