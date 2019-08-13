@@ -20,15 +20,15 @@ cfg.MIN_FACE = 0
 cfg.USE_FLIPED = True
 
 
-class FaceTransform(object):
-    def __init__(self):
-        pass
+# class FaceTransform(object):
+#     def __init__(self):
+#         pass
 
-    def __call__(self, target, landmark, width, height):
-        boxes = []
-        landmarks = []
-        labels = 1
-        return None
+#     def __call__(self, target, landmark, width, height):
+#         boxes = []
+#         landmarks = []
+#         labels = 1
+#         return None
 
 
 
@@ -48,29 +48,22 @@ class WiderFaceDetection(data.Dataset):
         # print(self.image_info)
 
         self.roidb = get_roidb(self.image_info, self.data_path)
+        # print(self.roidb)
+
         print("WiderFaceDetection:", len(self.roidb))
         # self.get_roidb()
         
-    
     def __getitem__(self, index):
         image, boxes, landmarks = self.pull_item(index)
-        print("dasdsa")
+        print("get_val")
         print(image.shape)
         print(boxes.shape)
-        # print(landmarks.shape)
+        print(landmarks.shape)
+        print("end")
         return image, boxes, landmarks
         
-
-
-
-        # if cfg.FACE_LANDMARK:
-        #     image, boxes, landmark = self.pull_item(index)
-        # else:
-        #     NotImplementedError  # TODO
-        # return image, boxes, landmark
-        
-    
     def __len__(self):
+        print("__len__: ", len(self.roidb))
         return len(self.roidb)
     
     def load_info(self, txt_file):
@@ -85,15 +78,47 @@ class WiderFaceDetection(data.Dataset):
     def pull_item(self, idx):
         roi = self.roidb[idx]
         roi = crop_img(roi)
+        print("LLLLLLL: ", type(roi['landmarks']))
 
-        if self.transform is not None:
-            roi = self.transform(roi)
+        # if self.transform is not None:
+        #     roi = self.transform(roi)
+        if 'image_data' in roi:
+            image =  roi['image_data']
+        else:
+            image = cv2.imread(roi['image_path'])
+        if roi['flipped']:
+            image = image[:, ::-1]
+        isColor_JITTERING = False
+        if isColor_JITTERING:
+            pass
+        image = image.astype(np.float32)
+        PIXEL_MEANS = np.array([103.939, 116.779, 123.68])
+        PIXEL_STDS = np.array([1.0, 1.0, 1.0])
+        PIXEL_SCALE = 1.0
+        image = transform_ms(image, PIXEL_MEANS, PIXEL_STDS, PIXEL_SCALE) # already to NCHW
+        image = image.astype(np.float32) # TODO if must ????
         # image = roi['image_data']
         # image = cv2.imread(roi['image_path'])
-        image = roi['image_data']
-        image = image[:, :, (2, 1, 0)]  # to rgb
-        image = torch.from_numpy(image).permute(2, 0, 1)
-        return image, roi['boxes'], roi['landmarks']
+        # print("image_data is in roi: ", roi['image_data'].shape)
+        # image = roi['image_data']
+
+        # image = image[:, :, (2, 1, 0)]  # to rgb
+        im_tensor = torch.from_numpy(image)#.permute(2, 0, 1)
+        return im_tensor, roi['boxes'], roi['landmarks']
+
+  # if cfg.COLOR_JITTERING>0.0:
+    #     pass
+        # im = im.astype(np.float32)
+        # im = color_aug(im, config.COLOR_JITTERING)
+    # im_tensor = transform(im, config.PIXEL_MEANS, config.PIXEL_STDS, config.PIXEL_SCALE)
+    # processed_ims.append(im_tensor)
+    # im_info = [im_tensor.shape[2], im_tensor.shape[3], im_scale]
+    # new_rec['im_info'] = np.array(im_info, dtype=np.float32)
+    # processed_roidb.append(new_rec)
+
+
+
+
 
     # def get_roidb(self):
     #     # roidb = []

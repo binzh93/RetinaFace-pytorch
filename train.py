@@ -22,9 +22,9 @@ parser.add_argument('--batch_size', default=2, type=int, help='Batch size for tr
 
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
-parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface/train", help='Dataset root directory path')
+parser.add_argument('--num_workers', default=1, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--root', default="/home/dc2-user/zhubin/wider_face", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/home/dc2-user/zhubin/wider_face/train", help='Dataset root directory path')
 parser.add_argument('--lr', '--learning-rate', default=1e-1, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
@@ -85,8 +85,8 @@ with torch.no_grad():
 
 def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma, end_epoch, cfg):
     net.train()
-    print(len(train_loader))
-    print("=======")
+    # print(len(train_loader))
+    # print("=======")
     for i, xxx in enumerate(train_loader):
 
         imgs, boxes, landmarks = xxx
@@ -97,19 +97,40 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
             landmarks = [anno.cuda() for anno in landmarks]
         output = net(imgs)
         optimizer.zero_grad()
-        loss_conf, loss_loc, loss_landmark = criterion()
+        loss_conf, loss_loc, loss_landmark = criterion(output, anchors, [boxes, landmarks])
         loss = loss_conf[0] + loss_conf[1] + loss_conf[2] 
         loss += loss_loc[0] + loss_loc[1] + loss_loc[2] 
         loss += loss_landmark[0] + loss_landmark[1] + loss_landmark[2] 
         loss.backward()
         optimizer.step()
-        print(loss)
+        print("loss:", loss)
 
 
+def detection_collate(batch):
+    """Custom collate fn for dealing with batches of images that have a different
+    number of associated object annotations (bounding boxes).
 
+    Arguments:
+        batch: (tuple) A tuple of tensor images and lists of annotations
+
+    Return:
+        A tuple containing:
+            1) (tensor) batch of images stacked on their 0 dim
+            2) (list of tensors) annotations for a given image are stacked on 0 dim
+    """
+    
+    imgs = []
+    targets = []
+    landmarks = []
+    for sample in batch:
+        imgs.append(sample[0])
+        targets.append(torch.FloatTensor(sample[1]))
+        landmarks.append(torch.FloatTensor(sample[2]))
+    return torch.stack(imgs, 0), targets, landmarks
 
     
 def main():
+    print("=======")
     backbone = resnet50()
     net = RetinaFace(backbone)
     if torch.cuda.is_available():
@@ -118,7 +139,8 @@ def main():
             if args.num_workers>1:
                 net = torch.nn.DataParallel(net)  # must after loading model weigths
             else:
-                raise NotImplementedError
+                # raise NotImplementedError
+                pass
             net.cuda()
             # net.to(device)
             cudnn.benchmark = True
@@ -128,7 +150,9 @@ def main():
 
     train_dataset = WiderFaceDetection(root_path=args.root, data_path=args.dataset_root, phase="train", 
                                        dataset_name="WiderFace", transform=None)
-    train_loader = data.DataLoader(train_dataset, args.batch_size, shuffle=True, num_workers=args.num_workers) # , collate_fn=detection_collate)
+    # train_loader = data.DataLoader(train_dataset, args.batch_size, shuffle=True, num_workers=args.num_workers) # , collate_fn=detection_collate)
+    train_loader = data.DataLoader(train_dataset, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=detection_collate)
+
     print("sucess train_loader")
 
     

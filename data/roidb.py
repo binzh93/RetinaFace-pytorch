@@ -12,6 +12,7 @@ cfg.FACE_LANDMARK = True
 cfg.MIN_FACE = 0
 cfg.COLOR_JITTERING = 0.125
 cfg.USE_FLIPED = True
+cfg.IMG_DATA = False
 
 # /home/shanma/Workspace/zhubin/RetinaFace/data/retinaface/images/0--Parade/0_Parade_marchingband_1_849.jpg
 
@@ -62,12 +63,16 @@ def get_roidb(image_info, data_path):
             'blur': blur,
             'flipped': False
         }
+        if cfg.IMG_DATA:
+            roi['image_data'] = image
         if cfg.FACE_LANDMARK:
             roi['landmarks'] = landmarks
         if len(boxes)>0:
             roidb.append(roi)
             if cfg.USE_FLIPED:
-                roidb.append(get_flipped_roi(roi))
+                flipped_roi = get_flipped_roi(roi)
+                assert len(flipped_roi['boxes']) > 0
+                roidb.append(flipped_roi)
         else:
             print(roi['image_path'])
     # print("roidb: ", len(roidb))
@@ -87,8 +92,8 @@ def get_flipped_roi(roi):
         'height': roi['height'],
         'width': roi['width'],
         'boxes': boxes,  
-        'gt_classes': roi['gt_classes'].copy(),
-        'blur': roi['blur'].copy(),  # TODO
+        'gt_classes': roi['gt_classes'], #.copy(),
+        'blur': roi['blur'],#.copy(),  # TODO
         'flipped': True
     }
 

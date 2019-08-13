@@ -17,8 +17,20 @@ cfg.MIN_FACE = 0
 cfg.COLOR_JITTERING = 0.125
 cfg.USE_BLUR = False
 
+def transform_ms(im, pixel_means, pixel_stds, pixel_scale):
+    """
+    transform into mxnet tensor,
+    subtract pixel size and transform to correct format
+    :param im: [height, width, channel] in BGR
+    :param pixel_means: [B, G, R pixel means]
+    :return: [batch, channel, height, width]
+    """
+    im_tensor = np.zeros((3, im.shape[0], im.shape[1]))
+    for i in range(3):
+        im_tensor[i, :, :] = (im[:, :, 2 - i]/pixel_scale - pixel_means[2 - i]) / pixel_stds[2 - i]
+    return im_tensor
 
-def transform(im, pixel_means, pixel_stds, pixel_scale):
+def transform_ms_old(im, pixel_means, pixel_stds, pixel_scale):
     """
     transform into mxnet tensor,
     subtract pixel size and transform to correct format
@@ -38,11 +50,14 @@ def crop_img(roi):
     else:
         assert osp.exists(roi['image_path'])
         image = cv2.imread(roi['image_path'])
+        if roi['flipped']:
+            image = image[:, ::-1]
+            roi['flipped'] = False
 
     # TODO
     INPUT_SIZE = cfg.SCALES[0]
     PRE_SCALES = [0.3, 0.45, 0.6, 0.8, 1.0]
-    _scale = np.random.choice(PRE_SCALES)
+    _scale = np.random.choice(PRE_SCALES) # TODO best ==> np.random(0.3, 1.0) ????
     size = int(np.min(image.shape[0:2])*_scale)
     im_scale = float(INPUT_SIZE)/size
     # origin_shape = image.shape
@@ -56,8 +71,9 @@ def crop_img(roi):
         landmarks = roi['landmarks'].copy()
         landmarks = landmarks * im_scale
     
-    # LIMITED_TIMES = 25
-    LIMITED_TIMES = 1000
+    LIMITED_TIMES = 25
+    # LIMITED_TIMES = 1000
+    FLAG = 0
     retry = 0
     while retry<LIMITED_TIMES:
         # cv2 shape ==> (H, W, C)
@@ -99,8 +115,9 @@ def crop_img(roi):
             if cfg.FACE_LANDMARK:
                 valid_landmarks.append(landmarks_new[idx])
         if len(valid_inds)>0 or retry==(LIMITED_TIMES-1):
+            FLAG = 1
             image = image_new
-            boxes = np.array(valid_boxes)
+            boxes = np.array(valid_boxes, dtype=np.float32)
             gt_classes = roi['gt_classes'][valid_inds]
 
             roi_crop = {
@@ -114,9 +131,12 @@ def crop_img(roi):
             }
             # if "image_data" in roi:
             #     roi_crop['image_data'] = roi['image_data'].copy()
-            roi_crop['image_data'] = image
+            # MUST SAVE IMAGE_DATA or SAVE RESIZE SCALE
+            roi_crop['image_data'] = image  
+            roi_crop['flipped'] = False
             if cfg.FACE_LANDMARK:
                 # landmarks = valid_landmarks
+                valid_landmarks = np.array(valid_landmarks, dtype=np.float32)
                 roi_crop['landmarks'] = valid_landmarks
             break
         retry += 1
@@ -131,6 +151,10 @@ def crop_img(roi):
     # im_info = [im_tensor.shape[2], im_tensor.shape[3], im_scale]
     # new_rec['im_info'] = np.array(im_info, dtype=np.float32)
     # processed_roidb.append(new_rec)
+    if FLAG: 
+        print("sucess crop")
+    else:
+        print("Fail crop")
     return roi_crop
             
 
