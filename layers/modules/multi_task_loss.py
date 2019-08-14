@@ -242,7 +242,7 @@ class MultiTaskLoss(nn.Module):
             loc_t = loc_t * bbox_weights_temp
             N_loc = (conf_t == 1).sum() 
             if N_loc ==0:    
-                loss_loc.append(torch.tensor(0.0))
+                loss_loc.append(torch.tensor(0.0).cuda())
 #                 print("N_loc is 0")
 #                 print(F.smooth_l1_loss(loc_pred, loc_t, size_average=False))
 #                 print("^^^^^^^^")
@@ -256,7 +256,7 @@ class MultiTaskLoss(nn.Module):
             landmark_t *= landmark_weight_temp
             N_landmark = (landmark_weight_temp[:, 0]==1).sum()
             if N_landmark ==0:
-                loss_landmark.append(torch.tensor(0.0))
+                loss_landmark.append(torch.tensor(0.0).cuda())
 #                 print("N_landmark is 0")
 #                 print(F.smooth_l1_loss(landmark_pred, landmark_t, size_average=False))
 #                 print("^^^^^^^^")
