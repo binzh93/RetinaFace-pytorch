@@ -18,13 +18,13 @@ import torch.optim as optim
 import argparse
 
 parser = argparse.ArgumentParser(description='RetinaFace')
-parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
+parser.add_argument('--batch_size', default=4, type=int, help='Batch size for training')
 
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
-parser.add_argument('--num_workers', default=1, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="/workspace/mnt/group/algorithm/zhubin/RetinaFace/data/retinaface", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="/workspace/mnt/group/algorithm/zhubin/RetinaFace/data/retinaface/train", help='Dataset root directory path')
+parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--root', default="/home/dc2-user/zhubin/wider_face", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/home/dc2-user/zhubin/wider_face/train", help='Dataset root directory path')
 parser.add_argument('--lr', '--learning-rate', default=1e-1, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
