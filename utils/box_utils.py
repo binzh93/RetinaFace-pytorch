@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 import numpy as np
 import torch
 import time
@@ -161,7 +162,7 @@ bbox_transform = nonlinear_transform
 
 
 DEBUG = False
-DEBUG = True
+# DEBUG = True
 
 if DEBUG:
     anchors = np.array([[-248., -248.,  263.,  263.], 

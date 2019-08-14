@@ -174,35 +174,35 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
     
     def forward(self, x):
-        print("forward")
-        print(x.shape)
+#         print("forward")
+#         print(x.shape)
         x = self.conv1(x)
-        print(x.shape)
+#         print(x.shape)
         x = self.bn1(x)
-        print(x.shape)
+#         print(x.shape)
         x = self.relu(x)
-        print(x.shape)
+#         print(x.shape)
         x = self.maxpool(x)
-        print(x.shape)
+#         print(x.shape)
 
         x = self.layer1(x)
-        print(x.shape)
+#         print(x.shape)
         # c2 = x
         x = self.layer2(x)
-        print(x.shape)
+#         print(x.shape)
         c3 = x
-        print(c3.shape)
+#         print(c3.shape)
         x = self.layer3(x)
-        print(x.shape)
+#         print(x.shape)
         c4 = x
-        print(c4.shape)
+#         print(c4.shape)
         x = self.layer4(x)
-        print(x.shape)
+#         print(x.shape)
         c5 = x
-        print(c5.shape)
+#         print(c5.shape)
         
         x = self.avgpool(x)
-        print(x.shape)
+#         print(x.shape)
         x = torch.flatten(x, 1)
         x = self.fc(x)
         
@@ -237,27 +237,27 @@ def resnet101(pretrained=False, progress=True, model_path=None):
 def resnet152(pretrained=False, progress=True, model_path=None):
     return _resnet("resnet152", Bottleneck, [3, 8, 36, 3], pretrained=False, progress=True)
 
-import cv2 
-import numpy as np
-from torchvision import models
-if __name__ == "__main__":
+# import cv2 
+# import numpy as np
+# from torchvision import models
+# if __name__ == "__main__":
 
-    # img = cv2.imread("/home/dc2-user/zhubin/wider_face/train/images/11--Meeting/11_Meeting_Meeting_11_Meeting_Meeting_11_893.jpg")
-    img = cv2.imread("/home/dc2-user/zhubin/wider_face/train/images/11--Meeting/11_Meeting_Meeting_11_Meeting_Meeting_11_893.jpg")
-    img = cv2.resize(img, (640, 640)).astype(np.float32)
-    # img = img[:, :, (2, 1, 0)] # bgr 2 rgb
-    img = img.transpose(2, 0, 1) # (H,W,C) => (C,H,W)
-    img = torch.from_numpy(img).unsqueeze(0).cuda()
+#     # img = cv2.imread("/home/dc2-user/zhubin/wider_face/train/images/11--Meeting/11_Meeting_Meeting_11_Meeting_Meeting_11_893.jpg")
+#     img = cv2.imread("/home/dc2-user/zhubin/wider_face/train/images/11--Meeting/11_Meeting_Meeting_11_Meeting_Meeting_11_893.jpg")
+#     img = cv2.resize(img, (640, 640)).astype(np.float32)
+#     # img = img[:, :, (2, 1, 0)] # bgr 2 rgb
+#     img = img.transpose(2, 0, 1) # (H,W,C) => (C,H,W)
+#     img = torch.from_numpy(img).unsqueeze(0).cuda()
 
-    model = resnet50().cuda().train()
-    y = model(img)
-    print("out")
-    print(y[0].shape)
-    print(y[1].shape)
-    print(y[2].shape)
+#     model = resnet50().cuda().train()
+#     y = model(img)
+#     print("out")
+#     print(y[0].shape)
+#     print(y[1].shape)
+#     print(y[2].shape)
 
-    # print(max(y))
+#     # print(max(y))
 
-    # model = models.resnet50(pretrained=True).eval().cuda() 
-    # y = model(img)
-    # print(torch.max(y))
+#     # model = models.resnet50(pretrained=True).eval().cuda() 
+#     # y = model(img)
+#     # print(torch.max(y))

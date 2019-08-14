@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 import torch.utils.data as data
 import os
 import os.path as osp
@@ -41,7 +42,8 @@ class WiderFaceDetection(data.Dataset):
         self.transform = transform
 
         self.data_path = osp.join(data_path, "images")
-        txt_file = osp.join(self.root_path, phase, "label.txt")
+        txt_file = osp.join(self.root_path, phase, "label_less.txt")
+#         txt_file = osp.join(self.root_path, phase, "label.txt")
 
         self.image_info = {}
         self.load_info(txt_file)
@@ -55,15 +57,16 @@ class WiderFaceDetection(data.Dataset):
         
     def __getitem__(self, index):
         image, boxes, landmarks = self.pull_item(index)
-        print("get_val")
-        print(image.shape)
-        print(boxes.shape)
-        print(landmarks.shape)
-        print("end")
+#         print("get_val")
+#         print(image.shape)
+#         print(boxes.shape)
+#         print(landmarks.shape)
+#         print("end")
+#         print("img path: ", self.roidb[index]['image_path'])
         return image, boxes, landmarks
         
     def __len__(self):
-        print("__len__: ", len(self.roidb))
+#         print("__len__: ", len(self.roidb))
         return len(self.roidb)
     
     def load_info(self, txt_file):
@@ -78,7 +81,7 @@ class WiderFaceDetection(data.Dataset):
     def pull_item(self, idx):
         roi = self.roidb[idx]
         roi = crop_img(roi)
-        print("LLLLLLL: ", type(roi['landmarks']))
+#         print("LLLLLLL: ", type(roi['landmarks']))
 
         # if self.transform is not None:
         #     roi = self.transform(roi)
@@ -86,8 +89,8 @@ class WiderFaceDetection(data.Dataset):
             image =  roi['image_data']
         else:
             image = cv2.imread(roi['image_path'])
-        if roi['flipped']:
-            image = image[:, ::-1]
+#         if roi['flipped']:
+#             image = image[:, ::-1]
         isColor_JITTERING = False
         if isColor_JITTERING:
             pass

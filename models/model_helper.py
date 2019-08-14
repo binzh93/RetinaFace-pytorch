@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import cv2
 import numpy as np
-from torchvision import models
+# from torchvision import models
 
 
 def conv_act_layer(in_channels, out_channels, kernel_size=1, stride=1, padding=0, act_type=None):

@@ -40,7 +40,7 @@ def get_roidb(image_info, data_path):
             if w<=cfg.MIN_FACE or h<=cfg.MIN_FACE:
                 continue
 
-            box = [x1, y1, x1+w, y1+w]
+            box = [x1, y1, x1+w, y1+h]
             landmark = values[4: 19]
             blur_val = values[-1]
             gt_class = 1

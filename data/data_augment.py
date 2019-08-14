@@ -52,7 +52,17 @@ def crop_img(roi):
         image = cv2.imread(roi['image_path'])
         if roi['flipped']:
             image = image[:, ::-1]
-            roi['flipped'] = False
+#             roi['flipped'] = False
+            
+    DEBUG = False
+    if DEBUG:
+        image__ = image.copy()
+        print("img path: ", roi['image_path'])
+        print(image.shape)      
+        for i in range(roi['boxes'].shape[0]):
+            print((int(roi['boxes'][i][0]), int(roi['boxes'][i][1])), (int(roi['boxes'][i][2]), int(roi['boxes'][i][3])))
+            cv2.rectangle(image__, (int(roi['boxes'][i][0]), int(roi['boxes'][i][1])), (int(roi['boxes'][i][2]), int(roi['boxes'][i][3])), (0,255,0), 3)
+        cv2.imwrite("images/" + osp.basename(roi['image_path']), image__)
 
     # TODO
     INPUT_SIZE = cfg.SCALES[0]
@@ -71,11 +81,15 @@ def crop_img(roi):
         landmarks = roi['landmarks'].copy()
         landmarks = landmarks * im_scale
     
-    LIMITED_TIMES = 25
+    LIMITED_TIMES = 30
     # LIMITED_TIMES = 1000
     FLAG = 0
     retry = 0
-    while retry<LIMITED_TIMES:
+#     while retry<LIMITED_TIMES:
+    while True:
+        if retry >LIMITED_TIMES:
+            print("{}, already crop times: {}".format(roi['image_path'], retry))
+            
         # cv2 shape ==> (H, W, C)
         x_tl, y_tl = (np.random.randint(0, image.shape[1]-INPUT_SIZE+1), np.random.randint(0, image.shape[0]-INPUT_SIZE+1))
         
@@ -114,7 +128,8 @@ def crop_img(roi):
             valid_boxes.append(box)
             if cfg.FACE_LANDMARK:
                 valid_landmarks.append(landmarks_new[idx])
-        if len(valid_inds)>0 or retry==(LIMITED_TIMES-1):
+#         if len(valid_inds)>0 or retry==(LIMITED_TIMES-1):
+        if len(valid_inds)>0:
             FLAG = 1
             image = image_new
             boxes = np.array(valid_boxes, dtype=np.float32)
@@ -151,10 +166,25 @@ def crop_img(roi):
     # im_info = [im_tensor.shape[2], im_tensor.shape[3], im_scale]
     # new_rec['im_info'] = np.array(im_info, dtype=np.float32)
     # processed_roidb.append(new_rec)
-    if FLAG: 
-        print("sucess crop")
-    else:
+    if FLAG==0: 
         print("Fail crop")
+    else:
+        DEBUG = False
+        DEBUG = True
+        if DEBUG:
+            image = roi_crop['image_data'].copy()
+#             print(image.shape)
+            
+            for i in range(roi_crop['boxes'].shape[0]):
+#                 print((int(roi_crop['boxes'][i][0]), int(roi_crop['boxes'][1])), int(roi_crop['boxes'][2]), int(roi_crop['boxes'][3]))
+                cv2.rectangle(image, (int(roi_crop['boxes'][i][0]), int(roi_crop['boxes'][i][1])), (int(roi_crop['boxes'][i][2]), int(roi_crop['boxes'][i][3])), (0,255,0), 3)
+            if roi['flipped']:
+                cv2.imwrite("images/flipped_" + osp.basename(roi_crop['image_path']), image)
+            else:
+                cv2.imwrite("images/" + osp.basename(roi_crop['image_path']), image)
+#             print(roi_crop['boxes'])
+#             cv2.rectangle(im,(int(sx1),int(sy1)),(int(sx2),int(sy2)),(0,255,0),3)
+#             函数参数： 图片， 左上角， 右下角， 颜色， 线条粗细， 线条类型，点类型
     return roi_crop
             
 
