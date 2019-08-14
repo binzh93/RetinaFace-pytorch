@@ -170,7 +170,7 @@ def crop_img(roi):
         print("Fail crop")
     else:
         DEBUG = False
-        DEBUG = True
+        # DEBUG = True
         if DEBUG:
             image = roi_crop['image_data'].copy()
 #             print(image.shape)
