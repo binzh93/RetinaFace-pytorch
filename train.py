@@ -18,14 +18,14 @@ import torch.optim as optim
 import argparse
 
 parser = argparse.ArgumentParser(description='RetinaFace')
-parser.add_argument('--batch_size', default=12, type=int, help='Batch size for training')
+parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
 
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
-parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="/home/dc2-user/zhubin/wider_face/", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="/home/dc2-user/zhubin/wider_face/train", help='Dataset root directory path')
-parser.add_argument('--lr', '--learning-rate', default=1e-1, type=float, help='initial learning rate')
+parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface/train", help='Dataset root directory path')
+parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--frequent', help='frequency of logging', default=30, type=int)
@@ -91,6 +91,7 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
     eps = 0.0001
     for iteration in range(end_epoch):
         t1 = time.time()
+        total_loss = 0.0
         loss = 0.0
         loss_32_conf = 0.0
         loss_16_conf = 0.0
@@ -113,10 +114,11 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
             output = net(imgs)
             optimizer.zero_grad()
             loss_conf, loss_loc, loss_landmark = criterion(output, anchors, [boxes, landmarks])
-            loss += loss_conf[0] + loss_conf[1] + loss_conf[2] 
+            loss = loss_conf[0] + loss_conf[1] + loss_conf[2] 
             loss += loss_loc[0] + loss_loc[1] + loss_loc[2] 
             loss += loss_landmark[0] + loss_landmark[1] + loss_landmark[2] 
             
+            total_loss += loss
             loss_32_conf += loss_conf[0]
             loss_16_conf += loss_conf[1]
             loss_8_conf += loss_conf[2]
@@ -140,7 +142,7 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
                 print("Epoch[{}]  Batch [{}-{}]  total loss: {:4.6f}\t"\
                 "32_conf: {:4.6f}\t16_conf: {:4.6f}\t8_conf: {:4.6f}\t" \
                 "32_loc: {:4.6f}\t16_loc: {:4.6f}\t8_loc: {:4.6f}\t" \
-                "32_landmark: {:4.6f}\t16_landmark: {:4.6f}\t8_landmark: {:4.6f}".format(iteration, 0, i+1, loss.item()/(i+1), \
+                "32_landmark: {:4.6f}\t16_landmark: {:4.6f}\t8_landmark: {:4.6f}".format(iteration, 0, i+1, total_loss.item()/(i+1), \
                 loss_32_conf.item()/(i+1), loss_16_conf.item()/(i+1), loss_8_conf.item()/(i+1), \
                 loss_32_loc.item()/(i+1), loss_16_loc.item()/(i+1), loss_8_loc.item()/(i+1), \
                 loss_32_landmark.item()/(i+1), loss_16_landmark.item()/(i+1), loss_8_landmark.item()/(i+1) ))
@@ -163,7 +165,7 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
 #             print()
 #             print("loss:", loss.item())
         t2 = time.time()   
-        print("Epoch[{}]  total loss: {:.6f}".format(iteration, loss.item()/(i+1)))  # :10.6f
+        print("Epoch[{}]  total loss: {:.6f}".format(iteration, total_loss.item()/(i+1)))  # :10.6f
         print("Epoch[{}]  loss_32_conf: {:.6f}".format(iteration, loss_32_conf.item()/(i+1)))
         print("Epoch[{}]  loss_16_conf: {:.6f}".format(iteration, loss_16_conf.item()/(i+1)))
         print("Epoch[{}]  loss_8_conf: {:.6f}".format(iteration, loss_8_conf.item()/(i+1)))
@@ -216,6 +218,7 @@ def detection_collate(batch):
 def main():
 #     print("=======")
     backbone = resnet50()
+    #backbone = resnet18()
     net = RetinaFace(backbone)
     if torch.cuda.is_available():
         if args.cuda:
