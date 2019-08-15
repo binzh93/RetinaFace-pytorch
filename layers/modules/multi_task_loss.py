@@ -18,7 +18,7 @@ cfg.FACE_LANDMARK = True
 
 cfg.USE_BLUR = False
 cfg.USE_OCCLUSION = False
-
+cfg.COPY_MXNET = False
 
 
 
@@ -247,7 +247,10 @@ class MultiTaskLoss(nn.Module):
 #                 print(F.smooth_l1_loss(loc_pred, loc_t, size_average=False))
 #                 print("^^^^^^^^")
             else:
-                loss_loc.append(F.smooth_l1_loss(loc_pred, loc_t, reduction='sum') / float(N_loc)) 
+                if cfg.COPY_MXNET:
+                    loss_loc.append(F.smooth_l1_loss((loc_pred*3.0), (loc_t*3.0), reduction='sum') / float(batch)) 
+                else:
+                    loss_loc.append(F.smooth_l1_loss((loc_pred), (loc_t), reduction='sum') / float(N_loc)) 
 #                 loss_loc.append(F.smooth_l1_loss(loc_pred, loc_t, size_average=False) / float(N_loc)) 
             
 
@@ -261,7 +264,10 @@ class MultiTaskLoss(nn.Module):
 #                 print(F.smooth_l1_loss(landmark_pred, landmark_t, size_average=False))
 #                 print("^^^^^^^^")
             else:
-                loss_landmark.append(F.smooth_l1_loss(landmark_pred, landmark_t, reduction='sum') / float(N_landmark))
+                if cfg.COPY_MXNET:
+                    loss_landmark.append(F.smooth_l1_loss((landmark_pred*3.0), (landmark_t*3.0), reduction='sum') * 0.4 / float(batch) )
+                else:
+                    loss_landmark.append(F.smooth_l1_loss((landmark_pred), (landmark_t), reduction='sum') / float(N_landmark))
 #                 loss_landmark.append(F.smooth_l1_loss(landmark_pred, landmark_t, size_average=False) / float(N_landmark))
 #             print("====={}======".format(inds[i+1]))
 #             print("N_cls: ", N_cls)

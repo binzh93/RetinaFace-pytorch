@@ -40,3 +40,4 @@ print(loss_loc)
 
 loss_loc = F.smooth_l1_loss(pred, gt, reduction='sum')
 print(loss_loc)
+

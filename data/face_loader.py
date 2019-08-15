@@ -94,8 +94,8 @@ class WiderFaceDetection(data.Dataset):
         isColor_JITTERING = False
         if isColor_JITTERING:
             pass
-        image = image.astype(np.float32)
-        PIXEL_MEANS = np.array([103.939, 116.779, 123.68])
+        # image = image.astype(np.float32) # TODO if must ????
+        PIXEL_MEANS = np.array([0.0, 0.0, 0.0])
         PIXEL_STDS = np.array([1.0, 1.0, 1.0])
         PIXEL_SCALE = 1.0
         image = transform_ms(image, PIXEL_MEANS, PIXEL_STDS, PIXEL_SCALE) # already to NCHW

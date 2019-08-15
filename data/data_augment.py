@@ -87,9 +87,6 @@ def crop_img(roi):
     retry = 0
 #     while retry<LIMITED_TIMES:
     while True:
-        if retry >LIMITED_TIMES:
-            print("{}, already crop times: {}".format(roi['image_path'], retry))
-            
         # cv2 shape ==> (H, W, C)
         x_tl, y_tl = (np.random.randint(0, image.shape[1]-INPUT_SIZE+1), np.random.randint(0, image.shape[0]-INPUT_SIZE+1))
         
@@ -185,6 +182,8 @@ def crop_img(roi):
 #             print(roi_crop['boxes'])
 #             cv2.rectangle(im,(int(sx1),int(sy1)),(int(sx2),int(sy2)),(0,255,0),3)
 #             函数参数： 图片， 左上角， 右下角， 颜色， 线条粗细， 线条类型，点类型
+    if retry >LIMITED_TIMES:
+            print("{}, crop times: {}".format(roi['image_path'], retry))
     return roi_crop
             
 
