@@ -5,6 +5,7 @@ import numpy as np
 import numpy.random as npr
 import copy
 import torch.nn.functional as F
+import time
 
 
 from easydict import EasyDict as edict
@@ -29,6 +30,7 @@ class MultiTaskLoss(nn.Module):
         self.num_classes = num_classes   # include background
         
     def forward(self, predictions, anchors, targets):
+        t1 = time.time()
         if cfg.FACE_LANDMARK:
             # conf_data, loc_data, landmark_data = predictions
             conf_pred_batch, loc_pred_batch, landmark_pred_batch = predictions
@@ -50,8 +52,11 @@ class MultiTaskLoss(nn.Module):
         landmark_targets_list = list()
         landmark_weights_list = list()
 
+        anchors_cp = anchors.copy()
+        t2 = time.time()
         for idx in range(batch):
-            anchors_cp = copy.deepcopy(anchors)
+            # anchors_cp = copy.deepcopy(anchors)
+            # anchors_cp = anchors.copy()
             gt_boxes = targets[0][idx] # TODO
             if cfg.FACE_LANDMARK:
                 gt_landmarks = targets[1][idx]     
@@ -164,7 +169,9 @@ class MultiTaskLoss(nn.Module):
             if cfg.FACE_LANDMARK:
                 landmark_targets_list.append(landmark_targets)
                 landmark_weights_list.append(landmark_weights)
-            
+
+        t3 = time.time()    
+
         anchors_label_t = torch.LongTensor(anchors_label_list).cuda().view(batch, -1)
         if cfg.USE_BLUR:
             bbox_pred_len = 5
@@ -273,6 +280,13 @@ class MultiTaskLoss(nn.Module):
 #             print("N_cls: ", N_cls)
 #             print("N_loc: ", N_loc)
 #             print("N_landmark: ", N_landmark)
+        t4 = time.time()    
+        
+        print("SSSSSSSSSSSS")
+        print("other: ", t2 -t1)
+        print("batch overlap: ", t3 - t2)
+        print("compute loss: ", t4 -t3)
+        print("SSSSSSSSSSSS")
         return loss_conf, loss_loc, loss_landmark
 
 

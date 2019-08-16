@@ -14,7 +14,7 @@ from layers.modules import MultiTaskLoss
 from layers.funnctions import Prior_Box
 
 import torch.optim as optim
-
+import time
 import argparse
 
 parser = argparse.ArgumentParser(description='RetinaFace')
@@ -90,7 +90,7 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
     # print("=======")
     eps = 0.0001
     for iteration in range(end_epoch):
-        t1 = time.time()
+        t_begin = time.time()
         total_loss = 0.0
         loss = 0.0
         loss_32_conf = 0.0
@@ -105,7 +105,10 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
         loss_16_landmark = 0.0
         loss_8_landmark = 0.0
         
+        t5 = 0.0
         for i, (imgs, boxes, landmarks) in enumerate(train_loader):
+            t1 = time.time()
+            print("image load: ", t1 - t5)
             imgs = imgs.cuda()
 
 #             with torch.no_grad():
@@ -113,7 +116,11 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
 #                 landmarks = [anno.cuda() for anno in landmarks]
             output = net(imgs)
             optimizer.zero_grad()
+            
+            t2 = time.time() 
             loss_conf, loss_loc, loss_landmark = criterion(output, anchors, [boxes, landmarks])
+            t3 = time.time()
+            
             loss = loss_conf[0] + loss_conf[1] + loss_conf[2] 
             loss += loss_loc[0] + loss_loc[1] + loss_loc[2] 
             loss += loss_landmark[0] + loss_landmark[1] + loss_landmark[2] 
@@ -159,12 +166,23 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
 #             print("loss_16_landmark: {:.6f}".format(loss_landmark[1]), )
 #             print("loss_8_landmark: {:.6f}".format(loss_landmark[2]))
             
+            #
+            t4 = time.time()
             loss.backward()
             optimizer.step()
 #             print("time: {}{} total loss: {}{}".format())
 #             print()
 #             print("loss:", loss.item())
-        t2 = time.time()   
+            t5 = time.time()
+
+            print("===========")
+            print("image infer: ", t2 - t1)
+            print("criterion loss time: ",t3 - t2) 
+            print("loss compute: ", t4 - t3)
+            print("loss backward: ", t5 - t4)
+
+
+        t_end = time.time()   
         print("Epoch[{}]  total loss: {:.6f}".format(iteration, total_loss.item()/(i+1)))  # :10.6f
         print("Epoch[{}]  loss_32_conf: {:.6f}".format(iteration, loss_32_conf.item()/(i+1)))
         print("Epoch[{}]  loss_16_conf: {:.6f}".format(iteration, loss_16_conf.item()/(i+1)))
@@ -175,7 +193,7 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
         print("Epoch[{}]  loss_32_landmark: {:.6f}".format(iteration, loss_32_landmark.item()/(i+1)))
         print("Epoch[{}]  loss_16_landmark: {:.6f}".format(iteration, loss_16_landmark.item()/(i+1)))
         print("Epoch[{}]  loss_8_landmark: {:.6f}".format(iteration, loss_8_landmark.item()/(i+1)))
-        print("Epoch[{}]  time comsuming: {}".format(iteration, (t2-t1)))     
+        print("Epoch[{}]  time comsuming: {}".format(iteration, (t_begin-t_end)))     
         # print("=========epoch {}=========".format(iteration+1))
         # print("time comsuming: {}".format((t2-t1)))     
         # print("total loss: {:.6f}".format(loss.item()/(iteration+1)))  # :10.6f

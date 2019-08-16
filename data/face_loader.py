@@ -7,6 +7,7 @@ import cv2
 import torch
 from .data_augment import *
 from .roidb import get_roidb
+import time
 
 # landmark  -1: no landmark
 # landmark  1.0: occlusion 
@@ -79,8 +80,13 @@ class WiderFaceDetection(data.Dataset):
                 self.image_info[image_name].append(line.strip())
 
     def pull_item(self, idx):
+        
         roi = self.roidb[idx]
+        t1 = time.time()
         roi = crop_img(roi)
+        t2 = time.time()
+        if t2 - t1 > 0.03:
+            print("crop time: ", t2 - t1)
 #         print("LLLLLLL: ", type(roi['landmarks']))
 
         # if self.transform is not None:
