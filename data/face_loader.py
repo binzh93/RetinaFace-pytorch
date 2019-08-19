@@ -85,9 +85,9 @@ class WiderFaceDetection(data.Dataset):
         t1 = time.time()
         roi = crop_img(roi)
         t2 = time.time()
-        if t2 - t1 > 0.03:
+        time_threshold = 1 # 0.03
+        if t2 - t1 > time_threshold:
             print("crop time: ", t2 - t1)
-#         print("LLLLLLL: ", type(roi['landmarks']))
 
         # if self.transform is not None:
         #     roi = self.transform(roi)
@@ -101,7 +101,7 @@ class WiderFaceDetection(data.Dataset):
         if isColor_JITTERING:
             pass
         # image = image.astype(np.float32) # TODO if must ????
-        PIXEL_MEANS = np.array([0.0, 0.0, 0.0])
+        PIXEL_MEANS = np.array([103.939, 116.779, 123.68])
         PIXEL_STDS = np.array([1.0, 1.0, 1.0])
         PIXEL_SCALE = 1.0
         image = transform_ms(image, PIXEL_MEANS, PIXEL_STDS, PIXEL_SCALE) # already to NCHW
@@ -113,7 +113,16 @@ class WiderFaceDetection(data.Dataset):
 
         # image = image[:, :, (2, 1, 0)]  # to rgb
         im_tensor = torch.from_numpy(image)#.permute(2, 0, 1)
-        return im_tensor, roi['boxes'], roi['landmarks']
+        # print(roi['landmarks'])
+
+        box_include_class = True
+        if box_include_class:
+            gt_classes = roi['gt_classes'].copy()
+            boxes = roi['boxes'].copy()
+            boxes = np.hstack((boxes, gt_classes[:, np.newaxis]))
+            return im_tensor, boxes, roi['landmarks']
+        else:
+            return im_tensor, roi['boxes'], roi['landmarks']
 
   # if cfg.COLOR_JITTERING>0.0:
     #     pass

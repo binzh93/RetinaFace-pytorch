@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import time
 
 label1 = torch.LongTensor([[1, 0, 1, -1, 0, 0 ,0], [1, 0, 0, 0 ,0, -1, 0]])
 # label2 = torch.LongTensor([[1, 0, 1, 1, 0, 0 ,0], [1, 0, 0, 0 ,0, 1, 0]])
@@ -40,4 +41,60 @@ print(loss_loc)
 
 loss_loc = F.smooth_l1_loss(pred, gt, reduction='sum')
 print(loss_loc)
+
+
+
+a = torch.Tensor([[1, 2], [4, 2], [6, 6]]).view(3, 2)
+
+print(a)
+import numpy as np
+b = np.array([[1.0, 2.0], [4, 2], [6, 6]], dtype=np.float32).reshape(2, 3)
+c = np.array([999, 999], dtype=np.int)
+# c = c
+d = np.hstack((b, c[:, np.newaxis]))
+print(d)
+ov, idx = a.max(1, keepdim=True)
+x = torch.Tensor([1, 2, 0])
+x = x>0
+print(x.size())
+print(x.unsqueeze(x.dim()).size())
+p_idx = x.unsqueeze(x.dim()).expand_as(a)
+print(p_idx)
+print(a)
+print(a[p_idx].shape)
+# print(idx)
+# print(ov.shape)
+# print(idx.shape)
+
+
+a = np.array([3, 2, 5, 1])
+a_t = torch.Tensor(a)
+print(a)
+idx = torch.Tensor([1, 0, 1, 0])
+idx = idx >0
+print(idx)
+print(a_t[idx])
+
+# labels = np.array([3, 2, 5, 1])
+# best_gt_idx_per_anchor.squeeze_(0)
+# labels = torch.LongTensor(np.array([3, 2, 5, 1])).cuda()
+# conf = labels[best_gt_idx_per_anchor]
+
+tt1 = time.time()
+for i in range(1):
+    # anchor_label = torch.Tensor(16800, 1).fill_(-1).long().cuda()
+    # targets = torch.ones(16800)*-1
+    # targets = targets.cuda()
+    labels = torch.LongTensor([1, 2, 3, 4, 5])#.cuda()
+print(time.time() - tt1)
+
+a = np.array([[1, 2], [3, 4]])
+b = torch.Tensor(a)
+c = b.detach().copy()
+print(b)
+print(c)
+c[0][0] = 999
+print(b)
+print(c)
+
 

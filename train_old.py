@@ -17,26 +17,15 @@ import torch.optim as optim
 import time
 import argparse
 
-from easydict import EasyDict as edict
-__C = edict()
-cfg = __C
-
-# cfg.Landmark = True
-cfg.FACE_LANDMARK = True
-# cfg.MIN_FACE = 0
-# cfg.USE_FLIPED = True
-
-
-
 parser = argparse.ArgumentParser(description='RetinaFace')
 parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
 
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
-parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--root', default="/home/dc2-user/zhubin/wider_face/", help='Dataset root directory path')
 parser.add_argument('--dataset_root', default="/home/dc2-user/zhubin/wider_face/train", help='Dataset root directory path')
-parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
+parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--frequent', help='frequency of logging', default=30, type=int)
@@ -93,14 +82,13 @@ anchors = Prior_Box()
 
 with torch.no_grad():
     anchors = anchors.forward()
-    anchors = anchors.cuda()
-print("anchors ready")
+    # anchors = anchors.cuda()
 
-def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma, end_epoch):
+def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma, end_epoch, cfg):
     net.train()
     # print(len(train_loader))
     # print("=======")
-    # eps = 0.0001
+    eps = 0.0001
     for iteration in range(end_epoch):
         t_begin = time.time()
         total_loss = 0.0
@@ -117,28 +105,19 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
         loss_16_landmark = 0.0
         loss_8_landmark = 0.0
         
-        # t5 = 0.0
-        for i, (images, targets) in enumerate(train_loader):
+        t5 = 0.0
+        for i, (imgs, boxes, landmarks) in enumerate(train_loader):
+            t1 = time.time()
+            print("image load: ", t1 - t5)
+            imgs = imgs.cuda()
 
-            if cfg.FACE_LANDMARK:
-                boxes, landmarks = targets
-            else:
-                boxes = targets
-            # t1 = time.time()
-            # print("image load: ", t1 - t5)
-            images = images.cuda()
-
-            # tt4 = time.time()
-            with torch.no_grad():
-                boxes = [box.cuda() for box in boxes]
-                if cfg.FACE_LANDMARK:
-                    landmarks = [lm.cuda() for lm in landmarks]
-            # print("gt to cuda: ", time.time() - tt4)
-            output = net(images)
+#             with torch.no_grad():
+#                 boxes = [anno.cuda() for anno in boxes]
+#                 landmarks = [anno.cuda() for anno in landmarks]
+            output = net(imgs)
             optimizer.zero_grad()
             
-            # t2 = time.time() 
-            # print("image infer: ", t2 -t1)
+            t2 = time.time() 
             loss_conf, loss_loc, loss_landmark = criterion(output, anchors, [boxes, landmarks])
             t3 = time.time()
             
@@ -188,19 +167,19 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
 #             print("loss_8_landmark: {:.6f}".format(loss_landmark[2]))
             
             #
-            # t4 = time.time()
+            t4 = time.time()
             loss.backward()
             optimizer.step()
 #             print("time: {}{} total loss: {}{}".format())
 #             print()
 #             print("loss:", loss.item())
-            # t5 = time.time()
+            t5 = time.time()
 
-            # print("===========")
-            # print("image infer: ", t2 - t1)
-            # print("criterion loss time: ",t3 - t2) 
-            # print("loss compute: ", t4 - t3)
-            # print("loss backward: ", t5 - t4)
+            print("===========")
+            print("image infer: ", t2 - t1)
+            print("criterion loss time: ",t3 - t2) 
+            print("loss compute: ", t4 - t3)
+            print("loss backward: ", t5 - t4)
 
 
         t_end = time.time()   
@@ -214,7 +193,7 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
         print("Epoch[{}]  loss_32_landmark: {:.6f}".format(iteration, loss_32_landmark.item()/(i+1)))
         print("Epoch[{}]  loss_16_landmark: {:.6f}".format(iteration, loss_16_landmark.item()/(i+1)))
         print("Epoch[{}]  loss_8_landmark: {:.6f}".format(iteration, loss_8_landmark.item()/(i+1)))
-        print("Epoch[{}]  time comsuming: {}".format(iteration, (t_end - t_begin)))     
+        print("Epoch[{}]  time comsuming: {}".format(iteration, (t_begin-t_end)))     
         # print("=========epoch {}=========".format(iteration+1))
         # print("time comsuming: {}".format((t2-t1)))     
         # print("total loss: {:.6f}".format(loss.item()/(iteration+1)))  # :10.6f
@@ -227,35 +206,31 @@ def train_net(train_loader, net, criterion, optimizer, epoch, epoch_step, gamma,
         # print("loss_32_landmark: {:.6f}".format(loss_32_landmark.item()/(iteration+1)))
         # print("loss_16_landmark: {:.6f}".format(loss_16_landmark.item()/(iteration+1)))
         # print("loss_8_landmark: {:.6f}".format(loss_8_landmark.item()/(iteration+1)))
-    torch.save(net.state_dict(), "/home/dc2-user/zhubin/RetinaFace-pytorch/weights/retinaface.pth")
+
 
 def detection_collate(batch):
-    '''
+    """Custom collate fn for dealing with batches of images that have a different
+    number of associated object annotations (bounding boxes).
+
     Arguments:
-        batch: batchsize 
-    
+        batch: (tuple) A tuple of tensor images and lists of annotations
+
     Return:
-        Tuple including:
-            1. batch image tenor: (N, C, H, W)
-            2. batch bounding box ground truth: list type 
-            3. batch landmark ground truth: list type
-    '''
-    images = []
-    boxes = []
-    if cfg.FACE_LANDMARK:
-        landmarks = []
-    for _, sample in enumerate(batch):
-        # assert torch.is_tensor(sample[0])
-        images.append(sample[0])
-        boxes.append(torch.FloatTensor(sample[1]))
-        if cfg.FACE_LANDMARK:
-            landmarks.append(torch.FloatTensor(sample[2]))
-        # boxes.append(torch.from_numpy(sample[1]).float())
-        # landmarks.append(torch.from_numpy(sample[2]).float())
-    if cfg.FACE_LANDMARK:
-        return (torch.stack(images, 0), (boxes, landmarks))
-    else:
-        return (torch.stack(images, 0), boxes)
+        A tuple containing:
+            1) (tensor) batch of images stacked on their 0 dim
+            2) (list of tensors) annotations for a given image are stacked on 0 dim
+    """
+    
+    imgs = []
+    targets = []
+    landmarks = []
+    for sample in batch:
+        imgs.append(sample[0])
+#         targets.append(torch.FloatTensor(sample[1]))
+#         landmarks.append(torch.FloatTensor(sample[2]))
+        targets.append(sample[1])
+        landmarks.append(sample[2])
+    return torch.stack(imgs, 0), targets, landmarks
 
     
 def main():
@@ -302,7 +277,7 @@ def main():
     for epoch in range(start_epoch + 1, end_epoch + 1):
 
         ######
-        train_net(train_loader, net, criterion, optimizer, epoch, epoch_step=1, gamma=1, end_epoch=100)
+        train_net(train_loader, net, criterion, optimizer, epoch, epoch_step=1, gamma=1, end_epoch=100, cfg=1)
         
         if epoch % 5 == 0:
             pass # TODO

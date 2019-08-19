@@ -79,7 +79,7 @@ def crop_img(roi):
     boxes = boxes * im_scale
     if cfg.FACE_LANDMARK:
         landmarks = roi['landmarks'].copy()
-        landmarks = landmarks * im_scale
+        landmarks[:, :, 0: 2] = landmarks[:, :, 0: 2] * im_scale
     
     LIMITED_TIMES = 30
     # LIMITED_TIMES = 1000

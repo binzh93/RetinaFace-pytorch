@@ -2,8 +2,6 @@
 import numpy as np
 import torch
 import time
-from torch.autograd import Variable
-
 
 
 def intersect(box_a, box_b):
@@ -48,11 +46,11 @@ def jaccard(box_a, box_b):
     return inter / union  # [A,B]
 
 
-def box_overlaps(anchors, gt_boxes, mxnet_overlap=False):
+def box_overlaps(anchors, gt_boxes, mxnet_overlap=True):
     if mxnet_overlap:
         overlaps = box_overlaps_mxnet(anchors, gt_boxes)
     else:
-        overlaps = jaccard(gt_boxes, anchors)
+        overlaps = jaccard(anchors, gt_boxes)
 
     return overlaps
 
@@ -164,59 +162,22 @@ bbox_transform = nonlinear_transform
 
 
 DEBUG = False
-DEBUG = True
+# DEBUG = True
 
 if DEBUG:
     anchors = np.array([[-248., -248.,  263.,  263.], 
                         [-216., -248.,  295.,  263.]])
     gt_boxes = np.array([183.12088, -47.304028, 478.5055, 306.68866]).reshape(1, 4)
-    
-    a_t = np.array([anchors for i in range(100)]).reshape(100, -1 , 4)
-    b_t = np.array([gt_boxes for i in range(100)]).reshape(100, -1, 4)
-    anchors = a_t
-    gt_boxes = b_t
-    
-    print("copy from mxnet")
+
     t1 = time.time()
-    for i in range(100):
-#         anchors = torch.Tensor(anchors)
-#         gt_boxes = torch.Tensor(gt_boxes)
-#         overlaps = box_overlaps(anchors, gt_boxes)
-        for j in range(100):
-            overlaps = box_overlaps_mxnet(anchors[j], gt_boxes[j])
-    print("overlap:", overlaps.shape)
+    for i in range(10000):
+        anchors = torch.Tensor(anchors)
+        gt_boxes = torch.Tensor(gt_boxes)
+        overlaps = box_overlaps(anchors, gt_boxes)
+        # overlaps = box_overlaps_mxnet(anchors, gt_boxes)
     t2 = time.time()
     print(overlaps)
     print(t2 - t1)
-    
-    
-    print("SSD method")
-    t_total = 0.0
-    
-    
-#     aa = [Variable(torch.Tensor(anchors.copy()), requires_grad=False).cuda() for i in range(1000)]
-#     gg = [Variable(torch.Tensor(gt_boxes.copy()), requires_grad=False).cuda() for i in range(1000)]
-    
-    aa = Variable(torch.Tensor(anchors.copy()), requires_grad=False).cuda()
-    gg = torch.Tensor(gt_boxes.copy()).cuda()
-#     gg = Variable(torch.Tensor(gt_boxes.copy()), requires_grad=False).cuda()
-    t3 = time.time()
-    for i in range(100):
-#         anchors_ = torch.Tensor(anchors)
-#         gt_boxes_ = torch.Tensor(gt_boxes)
-#         anchors_ = Variable(anchors_, requires_grad=False).cuda()
-#         gt_boxes_ = Variable(gt_boxes_, requires_grad=False).cuda()
-#         t1 = time.time()
-        for j in range(100):
-            overlaps = box_overlaps(aa[j], gg[j])
-        # overlaps = box_overlaps_mxnet(anchors, gt_boxes)
-        t2 = time.time()
-#         t_total += (t2-t1)
-#     t2 = time.time()
-    t4 =time.time()
-    print(overlaps)
-#     print(t_total)
-    print(t4-t3)
 
     # array([0.07358106])
     # array([0.10577289])

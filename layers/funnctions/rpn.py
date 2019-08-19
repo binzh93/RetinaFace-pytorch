@@ -141,17 +141,18 @@ class Prior_Box(object):
         # print(anchors.shape)
 
         # TODO
-        # anchors_t = torch.Tensor(anchors).view(-1, 4)
+        anchors_tensor = torch.Tensor(anchors).view(-1, 4)
         # if cfg.CLIP:
         #     anchors_t.clamp_(max=cfg.SCALES[0], min=0)
         # return anchors_t
-        return anchors
+        # print("rpn file: ", anchors_tensor.shape)
+        return anchors_tensor
 
 
            
 
-a = Prior_Box()
-a.forward()
+# a = Prior_Box()
+# a.forward()
 
 
 
