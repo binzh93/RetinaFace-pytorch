@@ -288,6 +288,11 @@ def main():
         if epoch % 5 == 0:
             pass # TODO
 
+    
+        if (epoch == end_epoch) or (epoch % 5 == 0):
+            torch.save(net.state_dict(), "/home/dc2-user/zhubin/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+            # torch.save(net.state_dict(), "/home/shanma/Workspace/zhubin/github_file/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+    
     #     if (epoch >= 50 and epoch % 10 == 0):
     #         eval_net(
     #             val_dataset,
@@ -301,11 +306,6 @@ def main():
     #             batch_size=batch_size)
 
     # save_checkpoint(net, end_epoch, size, optimizer)
-
-    # 
-    if (epoch == end_epoch) or (epoch % 5 == 0):
-        torch.save(net.state_dict(), "/home/dc2-user/zhubin/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
-    # torch.save(net.state_dict(), "/home/shanma/Workspace/zhubin/github_file/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
 
     if args.use_tensorboard:
         train_writer.close()
