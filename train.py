@@ -275,7 +275,7 @@ def main():
                                   gamma=0.1, 
                                   base_lr=args.lr,  # 0.001
                                   warm_up_end_lr=0.01, 
-                                  #warmup_epoch=5
+                                  warmup_epoch=5
                                  )
         if train_writer is not None:
             train_writer.add_scalar('learning_rate', lr, epoch)
