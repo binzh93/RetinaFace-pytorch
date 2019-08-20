@@ -64,7 +64,7 @@ class WiderFaceDetection(data.Dataset):
 #         print(landmarks.shape)
 #         print("end")
 #         print("img path: ", self.roidb[index]['image_path'])
-        return image, boxes, landmarks
+        return image, boxes, landmarks, 
         
     def __len__(self):
 #         print("__len__: ", len(self.roidb))
@@ -83,6 +83,40 @@ class WiderFaceDetection(data.Dataset):
         
         roi = self.roidb[idx]
         t1 = time.time()
+        DEBUG_I = False
+        if DEBUG_I:
+            img = cv2.imread(roi['image_path'])      
+            bbxes = roi['boxes']
+            lmks = roi['landmarks']#.reshape(-1, 15)
+            print(roi['image_path'])
+            if roi['flipped']:
+                img = img[:, ::-1]
+                print("images/z_flipped_" + osp.basename(roi['image_path']))
+                cv2.imwrite("images/z_flipped_" + osp.basename(roi['image_path']), img)
+                img = cv2.imread("images/z_flipped_" + osp.basename(roi['image_path']))
+             
+           
+            for jj in range(bbxes.shape[0]):
+                sf, st = (int(bbxes[jj][0]), int(bbxes[jj][1])), (int(bbxes[jj][2]), int(bbxes[jj][3]))
+                print(sf, st)
+                # print(lmks[jj])
+                # print()
+                cv2.rectangle(img, sf, st, (0, 0, 255), thickness=2)
+                print((lmks[jj][0, 0],lmks[jj][0, 1]))
+                print((lmks[jj][1, 0],lmks[jj][1, 1]))
+                print((lmks[jj][2, 0],lmks[jj][2, 1]))
+                print((lmks[jj][3, 0],lmks[jj][3, 1]))
+                print((lmks[jj][4, 0],lmks[jj][4, 1]))
+                cv2.circle(img,(lmks[jj][0, 0],lmks[jj][0, 1]),radius=1,color=(0,0,255),thickness=2)
+                cv2.circle(img,(lmks[jj][1, 0],lmks[jj][1, 1]),radius=1,color=(0,255,0),thickness=2)
+                cv2.circle(img,(lmks[jj][2, 0],lmks[jj][2, 1]),radius=1,color=(255,0,0),thickness=2)
+                cv2.circle(img,(lmks[jj][3, 0],lmks[jj][3, 1]),radius=1,color=(0,255,255),thickness=2)
+                cv2.circle(img,(lmks[jj][4, 0],lmks[jj][4, 1]),radius=1,color=(255,255,0),thickness=2)
+            if roi['flipped']:
+                cv2.imwrite("images/flipped_" + osp.basename(roi['image_path']), img)
+            else:
+                cv2.imwrite("images/" + osp.basename(roi['image_path']), img)
+
         roi = crop_img(roi)
         t2 = time.time()
         time_threshold = 1 # 0.03
@@ -101,9 +135,12 @@ class WiderFaceDetection(data.Dataset):
         if isColor_JITTERING:
             pass
         # image = image.astype(np.float32) # TODO if must ????
-        PIXEL_MEANS = np.array([103.939, 116.779, 123.68])
-        PIXEL_STDS = np.array([1.0, 1.0, 1.0])
-        PIXEL_SCALE = 1.0
+        # PIXEL_MEANS = np.array([103.939, 116.779, 123.68])
+        # PIXEL_MEANS = np.array([0.0, 0.0, 0.0])
+        # PIXEL_STDS = np.array([1.0, 1.0, 1.0])
+        PIXEL_MEANS = np.array([0.406,0.456, 0.485])  # bgr mean
+        PIXEL_STDS = np.array([0.225, 0.224, 0.229])
+        PIXEL_SCALE = 255.0
         image = transform_ms(image, PIXEL_MEANS, PIXEL_STDS, PIXEL_SCALE) # already to NCHW
         image = image.astype(np.float32) # TODO if must ????
         # image = roi['image_data']

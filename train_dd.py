@@ -41,8 +41,8 @@ parser.add_argument('--use_tensorboard', default=True, help='Log progress to Ten
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
 parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="/home/shanma/Workspace/zhubin/RetinaFace/data/retinaface/train", help='Dataset root directory path')
+parser.add_argument('--root', default="/home/dc2-user/zhubin/wider_face", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/home/dc2-user/zhubin/wider_face/train", help='Dataset root directory path')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
@@ -301,9 +301,10 @@ def main():
 
     # save_checkpoint(net, end_epoch, size, optimizer)
 
-    torch.save(net.state_dict(), "/home/dc2-user/zhubin/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+    # 
     if (epoch == end_epoch) or (epoch % 5 == 0):
-        torch.save(net.state_dict(), "/home/shanma/Workspace/zhubin/github_file/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+        torch.save(net.state_dict(), "/home/dc2-user/zhubin/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+    # torch.save(net.state_dict(), "/home/shanma/Workspace/zhubin/github_file/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
 
     if args.use_tensorboard:
         train_writer.close()

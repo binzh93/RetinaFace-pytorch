@@ -88,13 +88,20 @@ for i in range(1):
     labels = torch.LongTensor([1, 2, 3, 4, 5])#.cuda()
 print(time.time() - tt1)
 
-a = np.array([[1, 2], [3, 4]])
-b = torch.Tensor(a)
-c = b.detach().copy()
-print(b)
-print(c)
-c[0][0] = 999
-print(b)
-print(c)
+# a = np.array([[1, 2], [3, 4]])
+# b = torch.Tensor(a)
+# c = b.detach().copy()
+# print(b)
+# print(c)
+# c[0][0] = 999
+# print(b)
+# print(c)
+
+print("=======")
+lr_step = '1,2,3,4,5,55,68,80'
+# lr = 0.001
+input_batch_size = 16
 
 
+ss = get_cur_time()
+print(ss)

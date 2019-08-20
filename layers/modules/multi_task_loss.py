@@ -16,6 +16,8 @@ cfg.RPN_POSITIVE_OVERLAP = 0.5
 
 cfg.RPN_ENABLE_OHEM = 1
 cfg.FACE_LANDMARK = True
+# cfg.FACE_LANDMARK = False
+
 
 cfg.USE_BLUR = False
 cfg.USE_OCCLUSION = False
@@ -61,6 +63,8 @@ class MultiTaskLoss(nn.Module):
         else:
             # conf_data, loc_data = predictions
             conf_pred_batch, loc_pred_batch = predictions
+            # conf_pred_batch = predictions
+
 #         batch = conf_pred_batch.size(0)
         batch = conf_pred_batch[0].size(0)
 
@@ -70,7 +74,7 @@ class MultiTaskLoss(nn.Module):
         if cfg.FACE_LANDMARK:
             landmark_t_batch = torch.Tensor(batch, anchors.size(0), 10)
             landmark_weights = torch.zeros((batch, anchors.size(0), 10), dtype=torch.float32)
-
+        
         t2 = time.time()  # something load
 
         for idx in range(batch):
@@ -81,12 +85,15 @@ class MultiTaskLoss(nn.Module):
             # print(gt_labels.shape)
             if cfg.FACE_LANDMARK:
                 gt_landmarks = targets[1][idx].detach()   
+            # print(gt_boxes)
+            # print(gt_landmarks)
             
             # overlaps = box_overlaps(anchors.detach(), gt_boxes)  # not support box 5 point
             overlaps = box_overlaps(gt_boxes, anchors.detach())   # (gt_boxes_nums, anchors_num)
 
             best_gt_overlap_per_anchor, best_gt_idx_per_anchor = overlaps.max(0, keepdim=True)
-            best_anchor_overlap_per_gt, best_anchor_idx_per_gt = overlaps.max(1, keepdim=True)
+            # TODO
+            # best_anchor_overlap_per_gt, best_anchor_idx_per_gt = overlaps.max(1, keepdim=True)  
             
             best_gt_overlap_per_anchor.squeeze_(0)
             best_gt_idx_per_anchor.squeeze_(0)
@@ -94,7 +101,7 @@ class MultiTaskLoss(nn.Module):
             anchor_conf_t = gt_labels[best_gt_idx_per_anchor]    
             # anchor_conf_t[best_gt_overlap_per_anchor >= cfg.RPN_POSITIVE_OVERLAP]
             anchor_conf_t[best_gt_overlap_per_anchor < cfg.RPN_POSITIVE_OVERLAP] = -1  # fill -1 except the pos 
-            
+            # print(anchor_conf_t[anchor_conf_t>0].sum())
             if cfg.RPN_ENABLE_OHEM == 1:
                 pos_idx = best_gt_overlap_per_anchor>=cfg.RPN_POSITIVE_OVERLAP            
                 neg_all_idx = best_gt_overlap_per_anchor<cfg.RPN_NEGATIVE_OVERLAP
@@ -112,7 +119,8 @@ class MultiTaskLoss(nn.Module):
                     anchor_conf_t[v] = 0  # set as bg
                     neg_count += 1
                 # print(time.time() - tt1)
-            
+            # import pdb
+            # pdb.set_trace()
             # pos_idx = anchor_conf_t > 0
             bbox_targets = bbox_transform2(anchors.detach(), gt_boxes[best_gt_idx_per_anchor, :])
             if cfg.FACE_LANDMARK:
@@ -181,7 +189,12 @@ class MultiTaskLoss(nn.Module):
             anchor_label_batch_feat = anchor_label_batch[:, inds[i]: inds[i+1]].contiguous().view(conf_pred_batch_feat.size(0), )
             N_cls = (anchor_label_batch_feat != -1).sum()   # if detach must
             # print(anchor_label_batch_feat.size(), N_cls)
-            loss_conf.append(F.cross_entropy(conf_pred_batch_feat, anchor_label_batch_feat, ignore_index=-1, reduction='sum')/float(N_cls))
+            # print(N_cls)
+            # loss_conf.append(F.cross_entropy(conf_pred_batch_feat, anchor_label_batch_feat, ignore_index=-1, reduction='sum')/float(N_cls))
+            cls_feat_loss = F.cross_entropy(conf_pred_batch_feat, anchor_label_batch_feat, ignore_index=-1, reduction='sum')
+            if N_cls>0:
+                cls_feat_loss = cls_feat_loss / float(N_cls)
+            loss_conf.append(cls_feat_loss)
 
             # loc loss
             loc_pred_batch_feat = loc_pred_batch[i].view(-1, 4)
@@ -195,7 +208,10 @@ class MultiTaskLoss(nn.Module):
             if cfg.COPY_MXNET:
                 loss_loc.append(F.smooth_l1_loss(loc_pred_batch_feat, loc_t_batch_feat, reduction='sum') / float(batch))
             else:
-                loss_loc.append(F.smooth_l1_loss(loc_pred_batch_feat, loc_t_batch_feat, reduction='sum') / float(N_loc))
+                loc_feat_loss = F.smooth_l1_loss(loc_pred_batch_feat, loc_t_batch_feat, reduction='sum') 
+                if N_loc>0:
+                    loc_feat_loss = loc_feat_loss / float(N_loc)
+                loss_loc.append(loc_feat_loss)
 
             # landmark loss
             if cfg.FACE_LANDMARK:
@@ -210,7 +226,10 @@ class MultiTaskLoss(nn.Module):
                 if cfg.COPY_MXNET:
                     loss_landmark.append(F.smooth_l1_loss(landmark_pred_batch_feat, landmark_t_batch_feat, reduction='sum') * 0.4 / float(batch))
                 else:
-                    loss_landmark.append(F.smooth_l1_loss(landmark_pred_batch_feat, landmark_t_batch_feat, reduction='sum') * 0.4 / float(N_landmark))
+                    landmark_feat_loss = F.smooth_l1_loss(landmark_pred_batch_feat, landmark_t_batch_feat, reduction='sum') * 0.4
+                    if N_landmark > 0:
+                        landmark_feat_loss = landmark_feat_loss / float(N_landmark)
+                    loss_landmark.append(landmark_feat_loss)
 
         t4 = time.time()  # data to gpu and compute loss
 
@@ -220,7 +239,13 @@ class MultiTaskLoss(nn.Module):
             print("Multi task loss ==> batch compute overlaps: ", t3 - t2)
             print("Multi task loss ==> data to gpu and compute loss: ", t4 - t3)
 
-        return loss_conf, loss_loc, loss_landmark
+        
+        if cfg.FACE_LANDMARK:
+            return loss_conf, loss_loc, loss_landmark
+        else:
+            return loss_conf, loss_loc
+            # return loss_conf
+
 
 
     def forward_old_n1(self, predictions, anchors, targets):

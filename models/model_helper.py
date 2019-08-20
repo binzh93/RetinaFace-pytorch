@@ -29,6 +29,8 @@ class ContextModule(nn.Module):
         
         self.relu = nn.ReLU(inplace=True)
 
+        init_all_layers(self.modules())
+
     def forward(self, x):
         x1 = self.conv3x3(x)
 
@@ -57,6 +59,8 @@ class FPN(nn.Module):
         self.p3 = conv_act_layer(256, 256, kernel_size=3, padding=1, act_type='relu')
         self.p4 = conv_act_layer(256, 256, kernel_size=3, padding=1, act_type='relu')
 
+        init_all_layers(self.modules())
+
     def forward(self, x):
         if len(x) == 3:
             c3, c4, c5 = x
@@ -82,3 +86,30 @@ class FPN(nn.Module):
         # print(p4.shape)
         # print(p5.shape)
         return (p3, p4, p5)
+
+
+def init_all_layers(modules):
+    for m in modules:
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.constant_(m.weight, 1.0)
+            nn.init.constant_(m.bias, 0.0)
+        elif isinstance(m, nn.Linear):
+            nn.init.normal_(m.weight, 0, 0.01)
+            nn.init.constant_(m.bias, 0)
+
+
+def initialize_layer(layer):
+    if isinstance(layer, nn.Conv2d):
+        nn.init.kaiming_normal_(layer.weight, mode='fan_out', nonlinearity='relu')
+        if layer.bias is not None:
+            nn.init.constant_(layer.bias, 0.0)
+    if isinstance(layer, nn.BatchNorm2d):
+        nn.init.constant_(layer.weight, 1.0)
+        nn.init.constant_(layer.bias, 0.0)
+    if isinstance(layer, nn.Linear):
+        nn.init.normal_(layer.weight, 0, 0.01)
+        nn.init.constant_(layer.bias, 0)

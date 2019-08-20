@@ -104,9 +104,9 @@ def anchors_plane(feat_height, feat_width, feat_stride, base_anchors):
     return all_anchors
 
 
-class Prior_Box(object):
+class Anchor_Box(object):
     def __init__(self, ):
-        super(Prior_Box, self).__init__()
+        super(Anchor_Box, self).__init__()
         # self.feature_maps = cfg.FEATURE_MAPS
         pass
 
