@@ -277,13 +277,14 @@ def main():
                                   warm_up_end_lr=0.01, 
                                   warmup_epoch=5
                                  )
-        if train_writer is not None:
-            train_writer.add_scalar('learning_rate', lr, epoch)
         print("Epoch[{}]  lr: {}".format(epoch, lr))
-        
-        # train
-        train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_writer=train_writer)
-        
+        if args.use_tensorboard:
+            train_writer.add_scalar('learning_rate', lr, epoch)
+            # train
+            train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_writer=train_writer)
+        else:
+            train_net(train_loader, net, criterion, optimizer, epoch, anchors)
+            
         if epoch % 5 == 0:
             pass # TODO
 
