@@ -37,7 +37,7 @@ cfg.FACE_LANDMARK = True
 
 parser = argparse.ArgumentParser(description='RetinaFace')
 parser.add_argument('--batch_size', default=32, type=int, help='Batch size for training')
-parser.add_argument('--use_tensorboard', default=False, help='Log progress to TensorBoard')
+parser.add_argument('--use_tensorboard', default=True, help='Log progress to TensorBoard')
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
 parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
@@ -248,8 +248,8 @@ def main():
                 os.mkdir(args.log_dir)
         train_writer = SummaryWriter(log_dir="{}".format(args.log_dir), comment=args.arch)
         
-        dummy_input = torch.rand(1, 3, 640, 640).cuda()
-        train_writer.add_graph(backbone, (dummy_input, ))
+        # dummy_input = torch.rand(1, 3, 640, 640).cuda()
+        # train_writer.add_graph(backbone, (dummy_input, ))
 
     train_dataset = WiderFaceDetection(root_path=args.root, data_path=args.dataset_root, phase="train", 
                                        dataset_name="WiderFace", transform=None)
