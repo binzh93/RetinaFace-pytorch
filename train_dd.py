@@ -36,7 +36,7 @@ cfg.FACE_LANDMARK = True
 
 
 parser = argparse.ArgumentParser(description='RetinaFace')
-parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
+parser.add_argument('--batch_size', default=32, type=int, help='Batch size for training')
 parser.add_argument('--use_tensorboard', default=True, help='Log progress to TensorBoard')
 parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
