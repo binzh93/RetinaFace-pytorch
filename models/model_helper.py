@@ -5,6 +5,15 @@ import cv2
 import numpy as np
 # from torchvision import models
 
+from easydict import EasyDict as edict
+__C = edict()
+cfg = __C
+
+cfg.USE_CROP = True
+# cfg.FACE_LANDMARK = True
+# cfg.USE_OCCLUSION = False
+
+
 
 def conv_act_layer(in_channels, out_channels, kernel_size=1, stride=1, padding=0, act_type=None):
     layers = []
@@ -72,11 +81,17 @@ class FPN(nn.Module):
         c5_lateral = self.lateral5(c5)
 
         c5_up = F.interpolate(c5_lateral, scale_factor=2, mode='nearest')
-        c4 = c4_lateral + c5_up
+        if cfg.USE_CROP:
+            c4 = c4_lateral + c5_up[:, :, 0: c4_lateral.size(2), 0:c4_lateral.size(3)]
+        else:
+            raise NotImplementedError
         c4 = self.p4(c4)
 
         c4_up = F.interpolate(c4, scale_factor=2, mode='nearest')
-        c3 = c3_lateral + c4_up
+        if cfg.USE_CROP:
+            c3 = c3_lateral + c4_up[:, :, 0: c3_lateral.size(2), 0: c3_lateral.size(3)]
+        else:
+            raise NotImplementedError
         c3 = self.p3(c3)
 
         p3 = c3

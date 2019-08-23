@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import cv2
 from models.model_helper import FPN, ContextModule, init_all_layers, initialize_layer
-from models.retina_face import *
+# from models.retina_face import *
 # from model_helper import FPN, ContextModule
 # from retina_face import *
 
@@ -52,10 +52,10 @@ class RetinaFace(nn.Module):
         if cfg.USE_OCCLUSION:
             self.landmark_pred_len = 15
 
-        self.rpn_cls_score = nn.Conv2d(in_channels=256, out_channels=num_anchors*self.num_classes, kernel_size=1)
-        self.rpn_bbox_pred = nn.Conv2d(in_channels=256, out_channels=num_anchors*self.bbox_pred_len, kernel_size=1)
+        self.rpn_cls_score = nn.Conv2d(in_channels=256, out_channels=self.base_anchors_num*self.num_classes, kernel_size=1)
+        self.rpn_bbox_pred = nn.Conv2d(in_channels=256, out_channels=self.base_anchors_num*self.bbox_pred_len, kernel_size=1)
         if cfg.FACE_LANDMARK:
-            self.rpn_landmark_pred = nn.Conv2d(in_channels=256, out_channels=num_anchors*self.landmark_pred_len, kernel_size=1)
+            self.rpn_landmark_pred = nn.Conv2d(in_channels=256, out_channels=self.base_anchors_num*self.landmark_pred_len, kernel_size=1)
         
         self._init_modules_()
 
@@ -92,24 +92,24 @@ class RetinaFace(nn.Module):
         fea_fpn = [m1, m2, m3]
 
         # TODO Raw method 
-        # for fea in fea_fpn:
-        #     rpn_cls_score = self.rpn_cls_score(fea).permute(0, 2, 3, 1).contiguous()
-        #     conf_pred.append(rpn_cls_score.view(rpn_cls_score.size(0), -1, self.num_classes))
-
-        #     rpn_bbox_pred = self.rpn_bbox_pred(fea).permute(0, 2, 3, 1).contiguous()
-        #     loc_pred.append(rpn_bbox_pred.view(rpn_bbox_pred.size(0), -1, self.bbox_pred_len))
-        #     if cfg.FACE_LANDMARK:
-        #         rpn_landmark_pred = self.rpn_landmark_pred(fea).permute(0, 2, 3, 1).contiguous()
-        #         landmarks_pred.append(rpn_landmark_pred.view(rpn_landmark_pred.size(0), -1, self.landmark_pred_len))
         for fea in fea_fpn:
             rpn_cls_score = self.rpn_cls_score(fea).permute(0, 2, 3, 1).contiguous()
-            conf_pred.append(rpn_cls_score)
+            conf_pred.append(rpn_cls_score.view(rpn_cls_score.size(0), -1, self.num_classes))
 
             rpn_bbox_pred = self.rpn_bbox_pred(fea).permute(0, 2, 3, 1).contiguous()
-            loc_pred.append(rpn_bbox_pred)
+            loc_pred.append(rpn_bbox_pred.view(rpn_bbox_pred.size(0), -1, self.bbox_pred_len))
             if cfg.FACE_LANDMARK:
                 rpn_landmark_pred = self.rpn_landmark_pred(fea).permute(0, 2, 3, 1).contiguous()
-                landmarks_pred.append(rpn_landmark_pred)
+                landmarks_pred.append(rpn_landmark_pred.view(rpn_landmark_pred.size(0), -1, self.landmark_pred_len))
+        # for fea in fea_fpn:
+        #     rpn_cls_score = self.rpn_cls_score(fea).permute(0, 2, 3, 1).contiguous()
+        #     conf_pred.append(rpn_cls_score)
+
+        #     rpn_bbox_pred = self.rpn_bbox_pred(fea).permute(0, 2, 3, 1).contiguous()
+        #     loc_pred.append(rpn_bbox_pred)
+        #     if cfg.FACE_LANDMARK:
+        #         rpn_landmark_pred = self.rpn_landmark_pred(fea).permute(0, 2, 3, 1).contiguous()
+        #         landmarks_pred.append(rpn_landmark_pred)
         
         # return conf_pred
         if cfg.FACE_LANDMARK:

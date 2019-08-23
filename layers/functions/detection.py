@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
+from torch.autograd import Function
 import numpy as np
+
 
 from easydict import EasyDict as edict
 __C = edict()
@@ -96,8 +98,8 @@ def generate_anchors(base_size=16, ratios=[0.5, 1, 2], scales=np.array([32.0, 16
 
 
 
-def bbox_pred(boxes_anchor, boxes_deltas):
-
+def bbox_decode(boxes_anchor, boxes_deltas):
+    print("dsangds))))))JJJJJJJ")
     widths = boxes_anchor[:, 2] - boxes_anchor[:, 0] + 1.0
     heights = boxes_anchor[:, 3] - boxes_anchor[:, 1] + 1.0
     a_cx = boxes_anchor[:, 0] + 0.5 * (widths - 1.0)
@@ -118,10 +120,11 @@ def bbox_pred(boxes_anchor, boxes_deltas):
     pred_xmax = pred_cx + 0.5 * (pred_dw - 1.0)
     pred_ymax = pred_cy + 0.5 * (pred_dh - 1.0)
 
-    boxes_pred = torch.cat((pred_xmin, pred_ymin, pred_xmax, pred_ymax), dim=-1)
+    boxes_pred = torch.stack((pred_xmin, pred_ymin, pred_xmax, pred_ymax), dim=1)
+    print("nnx: ", boxes_pred.shape)
     return boxes_pred
 
-def landmark_pred(boxes_anchor, landmark_deltas):
+def landmark_decode(boxes_anchor, landmark_deltas):
     widths = boxes_anchor[:, 2] - boxes_anchor[:, 0] + 1.0
     heights = boxes_anchor[:, 3] - boxes_anchor[:, 1] + 1.0
     a_cx = boxes_anchor[:, 0] + 0.5 * (widths - 1.0)
@@ -165,7 +168,8 @@ class Detect(Function):
 # all_anchors = anchors_plane(feat_height, feat_width, feat_stride, base_anchors)
 # anchors_plane(feat_height, feat_width, feat_stride, base_anchors):
 
-    def forward(self, predictions):
+    def forward(self, predictions, img_shape):
+        H, W = img_shape
         if cfg.FACE_LANDMARK:
             conf_pred_batch, loc_pred_batch, landmark_pred_batch = predictions
         else:
@@ -188,6 +192,14 @@ class Detect(Function):
             landmark_list = list()
 
         for i in range(len(self.feat_strides)):
+            H_, W_ = round(H/self.feat_strides[i] + 0.5), round(W/self.feat_strides[i] + 0.5)
+            print("H_, w_: ", H_, W_)
+            print(conf_pred_batch[i].size(), loc_pred_batch[i].size(), landmark_pred_batch[i].size())
+            conf_pred_batch[i] = conf_pred_batch[i].reshape(H_, W_, self.num_classes*2)
+            loc_pred_batch[i] = loc_pred_batch[i].reshape(H_, W_, 4*2)
+            landmark_pred_batch[i] = landmark_pred_batch[i].reshape(H_, W_, 10*2)
+
+
             # TODO  need to change retina_face changed multitask need to change
             
             feat_stride = self.feat_strides[i]
@@ -196,27 +208,38 @@ class Detect(Function):
             ratios = self.rpn_anchor[stride_str]['RATIOS']
             scales = self.rpn_anchor[stride_str]['SCALES']
             # feat_height, feat_width = self.rpn_anchor[stride_str]['FEAT_MAP_SIZE']
-            feat_height, feat_width = conf_pred_batch[i].size(1), conf_pred_batch[i].size(2)
+            print("rawdadsa: ", conf_pred_batch[i].size())
+            feat_height, feat_width = conf_pred_batch[i].size(0), conf_pred_batch[i].size(1)
 
             base_anchors = generate_anchors(base_size=base_size, ratios=list(ratios), scales=np.array(scales, np.float32), stride=feat_stride)
             # print(base_anchors)
             feat_anchors = anchors_plane(feat_height, feat_width, feat_stride, base_anchors)
-
+            feat_anchors_t = torch.Tensor(feat_anchors).cuda()
             # Decode
             scores = F.softmax(conf_pred_batch[i].view(-1, self.num_classes))
-            decoded_boxes = bbox_pred(feat_anchors.view(-1, 4), loc_pred_batch[i].view(-1, 4))
+            print(feat_anchors_t.view(-1, 4).shape)
+            print(loc_pred_batch[i].view(-1, 4).shape)
+            decoded_boxes = bbox_decode(feat_anchors_t.view(-1, 4), loc_pred_batch[i].view(-1, 4))
+            print(decoded_boxes.shape)
             if cfg.FACE_LANDMARK:
-                decoded_landmarks = landmark_pred(feat_anchors.view(-1, 4), landmark_pred_batch[i].view(-1, 10))  # TODO
+                decoded_landmarks = landmark_decode(feat_anchors_t.view(-1, 4), landmark_pred_batch[i].view(-1, 10))  # TODO
 
             conf_list.append(scores)
             loc_list.append(decoded_boxes)
             if cfg.FACE_LANDMARK:
                 landmark_list.append(decoded_landmarks)
+        print("------------")
+        print(conf_list[0].shape, conf_list[1].shape)
         conf_pred = torch.cat(conf_list, dim=0)
         loc_pred = torch.cat(loc_list, dim=0)
         if cfg.FACE_LANDMARK:
             landmark_pred = torch.cat(landmark_list, dim=0)
+            print("----====----")
+            print(conf_pred.shape)
+            print(loc_pred.shape)
+            print(landmark_pred.shape)
             return conf_pred, loc_pred, landmark_pred
+        print("----==VVVV==----")
         return conf_pred, loc_pred
 
 
