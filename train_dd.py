@@ -36,13 +36,13 @@ cfg.FACE_LANDMARK = True
 
 
 parser = argparse.ArgumentParser(description='RetinaFace')
-parser.add_argument('--batch_size', default=32, type=int, help='Batch size for training')
+parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
 parser.add_argument('--use_tensorboard', default=True, help='Log progress to TensorBoard')
-parser.add_argument('-max','--max_epoch', default=100, type=int, help='max epoch for retraining')
+parser.add_argument('-max','--max_epoch', default=150, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
-parser.add_argument('--num_workers', default=2, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="/home/dc2-user/zhubin/wider_face", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="/home/dc2-user/zhubin/wider_face/train", help='Dataset root directory path')
+parser.add_argument('--num_workers', default=1, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--root', default="/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train", help='Dataset root directory path')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
@@ -271,11 +271,12 @@ def main():
     for epoch in range(start_epoch + 1, end_epoch + 1):
         lr = adjust_learning_rate(optimizer=optimizer, 
                                   epoch=epoch, 
-                                  step_epoch=[55, 68, 80], 
+#                                   step_epoch=[55, 68, 80], 
+                                  step_epoch=[55, 80, 100], 
                                   gamma=0.1, 
                                   base_lr=args.lr,  # 0.001
                                   warm_up_end_lr=0.01, 
-                                  warmup_epoch=5
+#                                   warmup_epoch=5
                                  )
         print("Epoch[{}]  lr: {}".format(epoch, lr))
         if args.use_tensorboard:
@@ -290,8 +291,8 @@ def main():
 
     
         if (epoch == end_epoch) or (epoch % 5 == 0):
-            torch.save(net.state_dict(), "/home/dc2-user/zhubin/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
-            # torch.save(net.state_dict(), "/home/shanma/Workspace/zhubin/github_file/RetinaFace-pytorch/weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+            torch.save(net.state_dict(), "weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
+            # torch.save(net.state_dict(), "weights/retinaface_epoch{}_{}.pth".format(epoch, get_cur_time()))
     
     #     if (epoch >= 50 and epoch % 10 == 0):
     #         eval_net(

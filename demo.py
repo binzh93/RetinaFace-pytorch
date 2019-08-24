@@ -27,9 +27,9 @@ parser = argparse.ArgumentParser(description='Retinaface Testing')
 # parser.add_argument('-d', '--dataset', default='COCO', help='VOC or COCO version')
 # parser.add_argument('-m', '--trained_model', default=None, type=str, help='Trained state_dict file path to open')
 # parser.add_argument('--test', action='store_true', help='to submit a test file')
-parser.add_argument('--model_path', default="weights/retinaface_epoch95_2019082123010.pth", type=str, help='Score threshold for classification')
-parser.add_argument('--score_thresh', default=0.02, type=float, help='Score threshold for classification')
-parser.add_argument('--nms_overlap', default=0.5, type=float, help='NMS Score threshold for classification')
+parser.add_argument('--model_path', default="weights/retinaface_epoch100_201908220041.pth", type=str, help='Score threshold for classification')
+parser.add_argument('--score_thresh', default=0.99, type=float, help='Score threshold for classification')
+parser.add_argument('--nms_overlap', default=0.1, type=float, help='NMS Score threshold for classification')
 
 parser.add_argument('--gpu', default=True, help='use gpu or not')
 args = parser.parse_args()
@@ -107,8 +107,8 @@ def test_net(net, testset):
                     c_scores = scores[inds, cls]
                     c_dets = np.hstack((c_boxes, c_scores[:, np.newaxis])).astype(np.float32, copy=False)
 
-                    keep = nms(c_dets, args.nms_overlap, force_cpu=True)  # TODO   soft_nms
-                    box_num = 10
+                    keep = nms(c_dets, args.nms_overlap, force_cpu=soft_nms)  # TODO   soft_nms
+                    box_num = 50
                     keep = keep[: box_num] # keep only the highest boxes
                     c_dets = c_dets[keep, :]
                     all_boxes[cls][idx] = c_dets
@@ -151,26 +151,6 @@ def test_net(net, testset):
                     
 
 
-
-
-                
-
-           
-
-
-            
-
-
-
-
-    
-
-
-
-
-    
-
-
 def main():
     
     backbone = resnet50()
@@ -208,7 +188,8 @@ def main():
         net.cuda()
     
     # dataloader = ['/home/dc2-user/zhubin/wider_face/val/images/12--Group/12_Group_Team_Organized_Group_12_Group_Team_Organized_Group_12_868.jpg']
-    dataloader = ['/home/dc2-user/zhubin/wider_face/train/images/35--Basketball/35_Basketball_playingbasketball_35_872.jpg']
+#     dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/15--Stock_Market/15_Stock_Market_Stock_Market_15_479.jpg']
+    dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/0--Parade/0_Parade_marchingband_1_1031.jpg']
     test_net(net, dataloader)
 
 

@@ -78,6 +78,7 @@ class MultiTaskLoss(nn.Module):
         t2 = time.time()  # something load
 
         for idx in range(batch):
+            
             # print(idx)
             gt_boxes = targets[0][idx][:,0: -1].detach() # TODO
             gt_labels = targets[0][idx][:, -1].detach()
@@ -87,6 +88,10 @@ class MultiTaskLoss(nn.Module):
                 gt_landmarks = targets[1][idx].detach()   
             # print(gt_boxes)
             # print(gt_landmarks)
+#             conf_pred_batch[idx] = conf_pred_batch[idx].view(-1, self.num_classes)
+#             loc_pred_batch[idx] = loc_pred_batch[idx].view(-1, 4)
+#             if cfg.FACE_LANDMARK:
+#                 landmark_pred_batch[idx] = landmark_pred_batch[idx].view(-1, 10)
             
             # overlaps = box_overlaps(anchors.detach(), gt_boxes)  # not support box 5 point
             overlaps = box_overlaps(gt_boxes, anchors.detach())   # (gt_boxes_nums, anchors_num)

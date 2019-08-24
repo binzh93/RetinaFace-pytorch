@@ -92,24 +92,24 @@ class RetinaFace(nn.Module):
         fea_fpn = [m1, m2, m3]
 
         # TODO Raw method 
+#         for fea in fea_fpn:
+#             rpn_cls_score = self.rpn_cls_score(fea).permute(0, 2, 3, 1).contiguous()
+#             conf_pred.append(rpn_cls_score.view(rpn_cls_score.size(0), -1, self.num_classes))
+
+#             rpn_bbox_pred = self.rpn_bbox_pred(fea).permute(0, 2, 3, 1).contiguous()
+#             loc_pred.append(rpn_bbox_pred.view(rpn_bbox_pred.size(0), -1, self.bbox_pred_len))
+#             if cfg.FACE_LANDMARK:
+#                 rpn_landmark_pred = self.rpn_landmark_pred(fea).permute(0, 2, 3, 1).contiguous()
+#                 landmarks_pred.append(rpn_landmark_pred.view(rpn_landmark_pred.size(0), -1, self.landmark_pred_len))
         for fea in fea_fpn:
             rpn_cls_score = self.rpn_cls_score(fea).permute(0, 2, 3, 1).contiguous()
-            conf_pred.append(rpn_cls_score.view(rpn_cls_score.size(0), -1, self.num_classes))
+            conf_pred.append(rpn_cls_score)
 
             rpn_bbox_pred = self.rpn_bbox_pred(fea).permute(0, 2, 3, 1).contiguous()
-            loc_pred.append(rpn_bbox_pred.view(rpn_bbox_pred.size(0), -1, self.bbox_pred_len))
+            loc_pred.append(rpn_bbox_pred)
             if cfg.FACE_LANDMARK:
                 rpn_landmark_pred = self.rpn_landmark_pred(fea).permute(0, 2, 3, 1).contiguous()
-                landmarks_pred.append(rpn_landmark_pred.view(rpn_landmark_pred.size(0), -1, self.landmark_pred_len))
-        # for fea in fea_fpn:
-        #     rpn_cls_score = self.rpn_cls_score(fea).permute(0, 2, 3, 1).contiguous()
-        #     conf_pred.append(rpn_cls_score)
-
-        #     rpn_bbox_pred = self.rpn_bbox_pred(fea).permute(0, 2, 3, 1).contiguous()
-        #     loc_pred.append(rpn_bbox_pred)
-        #     if cfg.FACE_LANDMARK:
-        #         rpn_landmark_pred = self.rpn_landmark_pred(fea).permute(0, 2, 3, 1).contiguous()
-        #         landmarks_pred.append(rpn_landmark_pred)
+                landmarks_pred.append(rpn_landmark_pred)
         
         # return conf_pred
         if cfg.FACE_LANDMARK:

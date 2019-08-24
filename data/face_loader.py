@@ -8,6 +8,8 @@ import torch
 from .data_augment import *
 from .roidb import get_roidb
 import time
+import random
+
 
 # landmark  -1: no landmark
 # landmark  1.0: occlusion 
@@ -20,6 +22,7 @@ cfg = __C
 cfg.FACE_LANDMARK = True
 cfg.MIN_FACE = 0
 cfg.USE_FLIPED = True
+cfg.COLOR_MODE = 2
 
 
 # class FaceTransform(object):
@@ -43,8 +46,8 @@ class WiderFaceDetection(data.Dataset):
         self.transform = transform
 
         self.data_path = osp.join(data_path, "images")
-        txt_file = osp.join(self.root_path, phase, "label_ori.txt")
-        # txt_file = osp.join(self.root_path, phase, "label.txt")
+#         txt_file = osp.join(self.root_path, phase, "label_ori.txt")
+        txt_file = osp.join(self.root_path, phase, "label.txt")
 
         self.image_info = {}
         self.load_info(txt_file)
@@ -131,9 +134,12 @@ class WiderFaceDetection(data.Dataset):
             image = cv2.imread(roi['image_path'])
 #         if roi['flipped']:
 #             image = image[:, ::-1]
-        isColor_JITTERING = False
+        isColor_JITTERING = True
         if isColor_JITTERING:
-            pass
+            image = image.astype(np.float32)
+            image = color_aug(image, 0.125)
+        
+            
         # image = image.astype(np.float32) # TODO if must ????
         # PIXEL_MEANS = np.array([103.939, 116.779, 123.68])
         # PIXEL_MEANS = np.array([0.0, 0.0, 0.0])
@@ -229,7 +235,41 @@ class WiderFaceDetection(data.Dataset):
     #     print("roidb: ", len(self.roidb))
     #     # return roidb
 
+def brightness_aug(src, x):
+  alpha = 1.0 + random.uniform(-x, x)
+  src *= alpha
+  return src
 
+def contrast_aug(src, x):
+  alpha = 1.0 + random.uniform(-x, x)
+  coef = np.array([[[0.299, 0.587, 0.114]]])
+  gray = src * coef
+  gray = (3.0 * (1.0 - alpha) / gray.size) * np.sum(gray)
+  src *= alpha
+  src += gray
+  return src
+
+def saturation_aug(src, x):
+  alpha = 1.0 + random.uniform(-x, x)
+  coef = np.array([[[0.299, 0.587, 0.114]]])
+  gray = src * coef
+  gray = np.sum(gray, axis=2, keepdims=True)
+  gray *= (1.0 - alpha)
+  src *= alpha
+  src += gray
+  return src
+
+def color_aug(img, x):
+  if cfg.COLOR_MODE>1:
+    augs = [brightness_aug, contrast_aug, saturation_aug]
+    random.shuffle(augs)
+  else:
+    augs = [brightness_aug]
+  for aug in augs:
+    #print(img.shape)
+    img = aug(img, x)
+    #print(img.shape)
+  return img
 
 
 if __name__ == "__main__":
