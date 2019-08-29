@@ -6,7 +6,7 @@ __C = edict()
 cfg = __C
 
 # cfg.Landmark = True
-cfg.FACE_LANDMARK = True
+cfg.FACE_LANDMARK = False
 
 def get_cur_time():
     '''

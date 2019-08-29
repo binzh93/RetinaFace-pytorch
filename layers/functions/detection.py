@@ -13,6 +13,7 @@ cfg.FACE_LANDMARK = True
 cfg.SCALES = (640, 640)
 cfg.CLIP = False
 cfg.RPN_FEAT_STRIDE = [8, 16, 32]
+cfg.CUDA = False
 
 cfg.RPN_ANCHOR = {
     '32': {'BASE_SIZE': 16, 'RATIOS': (1.0, ), 'SCALES': (32,16), 'FEAT_MAP_SIZE': [20, 20]},
@@ -215,7 +216,10 @@ class Detect(Function):
             base_anchors = generate_anchors(base_size=base_size, ratios=list(ratios), scales=np.array(scales, np.float32), stride=feat_stride)
             # print(base_anchors)
             feat_anchors = anchors_plane(feat_height, feat_width, feat_stride, base_anchors)
-            feat_anchors_t = torch.Tensor(feat_anchors).cuda()
+            feat_anchors_t = torch.Tensor(feat_anchors)
+            if cfg.CUDA:
+                feat_anchors_t = feat_anchors_t.cuda()
+            
             # Decode
             scores = F.softmax(conf_pred_batch[i].view(-1, self.num_classes))
             print(feat_anchors_t.view(-1, 4).shape)

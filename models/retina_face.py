@@ -13,7 +13,7 @@ __C = edict()
 cfg = __C
 
 cfg.USE_BLUR = False
-cfg.FACE_LANDMARK = True
+cfg.FACE_LANDMARK = False
 cfg.USE_OCCLUSION = False
 
 

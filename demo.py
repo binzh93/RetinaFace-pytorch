@@ -27,11 +27,12 @@ parser = argparse.ArgumentParser(description='Retinaface Testing')
 # parser.add_argument('-d', '--dataset', default='COCO', help='VOC or COCO version')
 # parser.add_argument('-m', '--trained_model', default=None, type=str, help='Trained state_dict file path to open')
 # parser.add_argument('--test', action='store_true', help='to submit a test file')
-parser.add_argument('--model_path', default="weights/retinaface_epoch100_201908220041.pth", type=str, help='Score threshold for classification')
+# parser.add_argument('--model_path', default="weights/retinaface_epoch100_201908220041.pth", type=str, help='Score threshold for classification')
+parser.add_argument('--model_path', default="weights/retinaface_epoch110_201908260852.pth", type=str, help='Score threshold for classification')
 parser.add_argument('--score_thresh', default=0.99, type=float, help='Score threshold for classification')
 parser.add_argument('--nms_overlap', default=0.1, type=float, help='NMS Score threshold for classification')
 
-parser.add_argument('--gpu', default=True, help='use gpu or not')
+parser.add_argument('--gpu', default=False, help='use gpu or not')
 args = parser.parse_args()
 
     
@@ -43,6 +44,7 @@ def test_net(net, testset):
     detector = Detect()  # TODO
     num_classes = 2 # TODO
     all_boxes = [[[] for _ in range(test_image_nums)] for _ in range(num_classes)]
+    all_landmarks = [[[] for _ in range(test_image_nums)] for _ in range(num_classes)]
     # all_landmarks = [[[] for _ in range(test_image_nums)] for _ in range(num_classes)]
     print(all_boxes)
     for idx in tqdm(range(test_image_nums)):
@@ -50,8 +52,12 @@ def test_net(net, testset):
             # image = testset.pull_image(idx)  #  TODO
             image = cv2.imread(testset[idx])   #  TODO
 
-            target_size = 1600
-            max_size = 2150
+#             target_size = 1600
+#             max_size = 2150
+#             target_size = 640
+#             max_size = 900
+            target_size = 640
+            max_size = 640
             im_shape = image.shape  # H, W, C
             
             im_size_min = min(im_shape[0: 2])
@@ -102,18 +108,28 @@ def test_net(net, testset):
                     if len(inds) == 0:
                         print("XXXXXXX")
                         all_boxes[cls][idx] = np.empty([0, 5], dtype=np.float32)
+                        if cfg.FACE_LANDMARK:
+                            all_landmarks[cls][idx] = np.empty([0, 10], dtype=np.float32)
                         continue
                     c_boxes = boxes[inds]
                     c_scores = scores[inds, cls]
                     c_dets = np.hstack((c_boxes, c_scores[:, np.newaxis])).astype(np.float32, copy=False)
+                    if cfg.FACE_LANDMARK:
+                        c_landmarks = landmarks[inds]
 
-                    keep = nms(c_dets, args.nms_overlap, force_cpu=soft_nms)  # TODO   soft_nms
+                    keep = nms(c_dets, args.nms_overlap, force_cpu=True)  # TODO   soft_nms
                     box_num = 50
                     keep = keep[: box_num] # keep only the highest boxes
                     c_dets = c_dets[keep, :]
                     all_boxes[cls][idx] = c_dets
+                    if cfg.FACE_LANDMARK:
+#                         c_landmarks = c_landmarks[keep, :]
+                        all_landmarks[cls][idx] = c_landmarks
                 
                 bbx = all_boxes[1][0]
+                lmks = all_landmarks[1][0]
+            print(lmks)
+#             print(bbx)
             DEBUG_I = True
             if DEBUG_I:
                 # img = cv2.imread(roi['image_path'])      
@@ -132,17 +148,22 @@ def test_net(net, testset):
                     print(sf, st)
                     # print(lmks[jj])
                     # print()
-                    cv2.rectangle(image, sf, st, (0, 0, 255), thickness=2)
+#                     cv2.rectangle(image, sf, st, (0, 0, 255), thickness=2)
                     # print((lmks[jj][0, 0],lmks[jj][0, 1]))
                     # print((lmks[jj][1, 0],lmks[jj][1, 1]))
                     # print((lmks[jj][2, 0],lmks[jj][2, 1]))
                     # print((lmks[jj][3, 0],lmks[jj][3, 1]))
                     # print((lmks[jj][4, 0],lmks[jj][4, 1]))
-                    # cv2.circle(img,(lmks[jj][0, 0],lmks[jj][0, 1]),radius=1,color=(0,0,255),thickness=2)
-                    # cv2.circle(img,(lmks[jj][1, 0],lmks[jj][1, 1]),radius=1,color=(0,255,0),thickness=2)
-                    # cv2.circle(img,(lmks[jj][2, 0],lmks[jj][2, 1]),radius=1,color=(255,0,0),thickness=2)
-                    # cv2.circle(img,(lmks[jj][3, 0],lmks[jj][3, 1]),radius=1,color=(0,255,255),thickness=2)
-                    # cv2.circle(img,(lmks[jj][4, 0],lmks[jj][4, 1]),radius=1,color=(255,255,0),thickness=2)
+#                     cv2.circle(image,(lmks[jj][0, 0],lmks[jj][0, 1]),radius=1,color=(0,0,255),thickness=2)
+#                     cv2.circle(image,(lmks[jj][1, 0],lmks[jj][1, 1]),radius=1,color=(0,255,0),thickness=2)
+#                     cv2.circle(image,(lmks[jj][2, 0],lmks[jj][2, 1]),radius=1,color=(255,0,0),thickness=2)
+#                     cv2.circle(image,(lmks[jj][3, 0],lmks[jj][3, 1]),radius=1,color=(0,255,255),thickness=2)
+#                     cv2.circle(image,(lmks[jj][4, 0],lmks[jj][4, 1]),radius=1,color=(255,255,0),thickness=2)
+                    cv2.circle(image,(lmks[jj][0],lmks[jj][1]),radius=1,color=(0,0,255),thickness=2)
+                    cv2.circle(image,(lmks[jj][2],lmks[jj][3]),radius=1,color=(0,255,0),thickness=2)
+                    cv2.circle(image,(lmks[jj][4],lmks[jj][5]),radius=1,color=(255,0,0),thickness=2)
+                    cv2.circle(image,(lmks[jj][6],lmks[jj][7]),radius=1,color=(0,255,255),thickness=2)
+                    cv2.circle(image,(lmks[jj][8],lmks[jj][9]),radius=1,color=(255,255,0),thickness=2)
                 cv2.imwrite("images/img.jpg", image)
                 # if roi['flipped']:
                 #     cv2.imwrite("images/flipped_" + osp.basename(roi['image_path']), img)
@@ -157,9 +178,10 @@ def main():
     net = RetinaFace(backbone)
 
     # print(net)
+    print("-----here----")
     
-    net_weights = torch.load(args.model_path)
-
+    net_weights = torch.load(args.model_path, map_location='cpu')
+    
     
     from collections import OrderedDict
     new_state_dict = OrderedDict()
@@ -172,6 +194,8 @@ def main():
             name = k
         new_state_dict[name] = v
     net.load_state_dict(new_state_dict)
+    net.eval()
+    
 
 
     # import pdb
@@ -189,7 +213,8 @@ def main():
     
     # dataloader = ['/home/dc2-user/zhubin/wider_face/val/images/12--Group/12_Group_Team_Organized_Group_12_Group_Team_Organized_Group_12_868.jpg']
 #     dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/15--Stock_Market/15_Stock_Market_Stock_Market_15_479.jpg']
-    dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/0--Parade/0_Parade_marchingband_1_1031.jpg']
+#     dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/0--Parade/0_Parade_marchingband_1_1031.jpg']
+    dataloader = ['/workspace/mnt/group/algorithm/zhubin/RetinaFace-pytorch/images/et_15_479.jpg']
     test_net(net, dataloader)
 
 

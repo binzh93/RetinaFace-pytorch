@@ -46,8 +46,8 @@ class WiderFaceDetection(data.Dataset):
         self.transform = transform
 
         self.data_path = osp.join(data_path, "images")
-#         txt_file = osp.join(self.root_path, phase, "label_ori.txt")
-        txt_file = osp.join(self.root_path, phase, "label.txt")
+        txt_file = osp.join(self.root_path, phase, "label_ori.txt")
+        # txt_file = osp.join(self.root_path, phase, "label.txt")
 
         self.image_info = {}
         self.load_info(txt_file)

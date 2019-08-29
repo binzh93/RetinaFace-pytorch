@@ -15,8 +15,8 @@ cfg.RPN_NEGATIVE_OVERLAP = 0.3
 cfg.RPN_POSITIVE_OVERLAP = 0.5
 
 cfg.RPN_ENABLE_OHEM = 1
-cfg.FACE_LANDMARK = True
-# cfg.FACE_LANDMARK = False
+# cfg.FACE_LANDMARK = True
+cfg.FACE_LANDMARK = False
 
 
 cfg.USE_BLUR = False
