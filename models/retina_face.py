@@ -7,14 +7,9 @@ from models.model_helper import FPN, ContextModule, init_all_layers, initialize_
 # from model_helper import FPN, ContextModule
 # from retina_face import *
 
+from configs.config import cfg
 
-from easydict import EasyDict as edict
-__C = edict()
-cfg = __C
 
-cfg.USE_BLUR = False
-cfg.FACE_LANDMARK = False
-cfg.USE_OCCLUSION = False
 
 
 # import torch.nn.init as init
@@ -33,10 +28,15 @@ cfg.USE_OCCLUSION = False
 class RetinaFace(nn.Module):
     def __init__(self, backbone, num_classes=2, pretrained_model_path=None):
         super(RetinaFace, self).__init__()
-        # self.res = 
+        if cfg.ARCH == "resnet18":
+            chanels = [128, 256, 512]
+        elif cfg.ARCH == "resnet50":
+            chanels = [512, 1024, 2048]
+        else:
+            raise NotImplementedError
         self.num_classes = num_classes
         self.backbone = backbone
-        self.fpn = FPN(channel=[512, 1024, 2048])
+        self.fpn = FPN(channel=chanels)
         self.pretrained_model_path = pretrained_model_path
 
         self.context_module1 = ContextModule(in_channels=256)
@@ -79,8 +79,8 @@ class RetinaFace(nn.Module):
         # print(p4.shape)
         # print(p5.shape)
         m1 = self.context_module1(p3)
-        m2 = self.context_module1(p4)
-        m3 = self.context_module1(p5)
+        m2 = self.context_module2(p4)
+        m3 = self.context_module3(p5)
         # print(m1.shape)
         # print(m2.shape)
         # print(m3.shape)
@@ -113,10 +113,10 @@ class RetinaFace(nn.Module):
         
         # return conf_pred
         if cfg.FACE_LANDMARK:
-            out = (conf_pred, loc_pred, landmarks_pred) 
+            out = (tuple(conf_pred), tuple(loc_pred), tuple(landmarks_pred)) 
             return out
         else:
-            out = (conf_pred, loc_pred) 
+            out = (tuple(conf_pred), tuple(loc_pred)) 
             return out
 
        

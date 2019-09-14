@@ -19,7 +19,7 @@ __C = edict()
 cfg = __C
 
 # cfg.Landmark = True
-cfg.FACE_LANDMARK = True
+cfg.FACE_LANDMARK = False
 cfg.MIN_FACE = 0
 cfg.USE_FLIPED = True
 cfg.COLOR_MODE = 2

@@ -80,18 +80,26 @@ class FPN(nn.Module):
         c4_lateral = self.lateral4(c4)
         c5_lateral = self.lateral5(c5)
 
-        c5_up = F.interpolate(c5_lateral, scale_factor=2, mode='nearest')
-        if cfg.USE_CROP:
-            c4 = c4_lateral + c5_up[:, :, 0: c4_lateral.size(2), 0:c4_lateral.size(3)]
-        else:
-            raise NotImplementedError
+        # torch.nn.functional.interpolate(input, size=None, scale_factor=None, mode='nearest', align_corners=None)
+
+        
+
+        c5_up = F.interpolate(c5_lateral, size=(c4_lateral.size(2), c4_lateral.size(3)), mode='nearest')
+        c4 = c4_lateral + c5_up
+        # c5_up = F.interpolate(c5_lateral, scale_factor=2, mode='nearest')
+        # if cfg.USE_CROP:
+        #     c4 = c4_lateral + c5_up[:, :, 0: c4_lateral.size(2), 0:c4_lateral.size(3)]
+        # else:
+        #     raise NotImplementedError
         c4 = self.p4(c4)
 
-        c4_up = F.interpolate(c4, scale_factor=2, mode='nearest')
-        if cfg.USE_CROP:
-            c3 = c3_lateral + c4_up[:, :, 0: c3_lateral.size(2), 0: c3_lateral.size(3)]
-        else:
-            raise NotImplementedError
+        c4_up = F.interpolate(c4, size=(c3_lateral.size(2), c3_lateral.size(3)), mode='nearest')
+        c3 = c3_lateral + c4_up
+        # c4_up = F.interpolate(c4, scale_factor=2, mode='nearest')
+        # if cfg.USE_CROP:
+        #     c3 = c3_lateral + c4_up[:, :, 0: c3_lateral.size(2), 0: c3_lateral.size(3)]
+        # else:
+        #     raise NotImplementedError
         c3 = self.p3(c3)
 
         p3 = c3

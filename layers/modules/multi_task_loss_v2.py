@@ -165,48 +165,53 @@ class MultiTaskLoss(nn.Module):
         inds = [0, 12800, 12800+3200, 16800]
         # print(landmark_weights.sum())  # TODO dasdasdsad dasdsadsadsa
         
-        
-                    
-
-
         for i in range(len(inds)-1):
             if cfg.RPN_ENABLE_OHEM == 1:
-                cls_feat_loss = 0.0
-                for j in range(batch):
-                    conf_pred_feat  = conf_pred_batch[i][j].view(-1, self.num_classes).contiguous()
-                    anchor_label_feat = anchor_label_batch[j, inds[i]: inds[i+1]].contiguous()
-                    # import pdb
-                    # pdb.set_trace()
-                    loss_c = log_sum_exp2(conf_pred_feat) - conf_pred_feat.gather(1, anchor_label_feat.view(-1, 1))
+                # Compute max conf across batch for hard negative mining
+                conf_pred_batch_feat = conf_pred_batch[i].view(-1,self.num_classes).contiguous()#.clone()
+                anchor_label_batch_feat = anchor_label_batch[:, inds[i]: inds[i+1]].contiguous()#.clone()
+                # print(conf_pred_batch_feat.shape, anchor_label_batch_feat.shape)
+                # import pdb
+                # pdb.set_trace()
+                # loss_c = log_sum_exp(conf_pred_batch_feat) - conf_pred_batch_feat.gather(1, anchor_label_batch_feat.view(-1, 1))
+                loss_c = log_sum_exp2(conf_pred_batch_feat) - conf_pred_batch_feat.gather(1, anchor_label_batch_feat.view(-1, 1))
 
-                    pos = anchor_label_feat>0
+                pos = anchor_label_batch_feat>0
 
-                    # Hard Negative Mining
-                    loss_c[pos] = 0 # filter out pos boxes for now
+                # Hard Negative Mining
+                loss_c[pos.view(-1,1)] = 0 # filter out pos boxes for now
+                loss_c = loss_c.view(batch, -1)
+                _,loss_idx = loss_c.sort(1, descending=True)
+                _,idx_rank = loss_idx.sort(1)
+                num_pos = pos.long().sum(1, keepdim=True)
 
-                    loss_c = loss_c.view(1, -1)
-                    _,loss_idx = loss_c.sort(1, descending=True)
-                    _,idx_rank = loss_idx.sort(1)
+                # print("num_pos: ", pos.size(), num_pos.size())
 
-                    num_pos = pos.long().sum()
-                    # import pdb
-                    # pdb.set_trace()
-                    if num_pos.data.sum() > 0:
-                        num_neg = torch.clamp(self.negpos_ratio * num_pos, max=pos.size(0)-1)
-                        fg_loss = F.cross_entropy(conf_pred_feat[pos], anchor_label_feat[pos], reduction='mean')
-                    else:
-                        num_neg = torch.clamp(self.negpos_ratio * num_pos+10, max=pos.size(0)-1) # TODO if no bg add 10 bg
-                        fg_loss = torch.tensor(0.,requires_grad=True).cuda()
-                        # print("This feature map no fg")
-                        # raise NotImplementedError
-                        # fake_num_pos = torch.ones(1, ).long().cuda() * 15
-                        # num_neg = torch.clamp(self.negpos_ratio * fake_num_pos, max=pos.size(0) - 1)
-                    neg = idx_rank < num_neg.expand_as(idx_rank)
-            
-                    bg_loss = F.cross_entropy(conf_pred_feat[neg.view(pos.size(0))], anchor_label_feat[neg.view(pos.size(0))], reduction='mean')
-                    cls_feat_loss += ( fg_loss + bg_loss ) / 2.0
+                if num_pos.data.sum() > 0:
+                    num_neg = torch.clamp(self.negpos_ratio * num_pos, max=pos.size(1)-1)
+                else:
+                    print("multi task loss: use fake num ")
+                    fake_num_pos = torch.ones(batch, 1).long().cuda() * 15
+                    num_neg = torch.clamp(self.negpos_ratio * fake_num_pos, max=pos.size(1) - 1)
 
-                loss_conf.append(cls_feat_loss/batch)
+                neg = idx_rank < num_neg.expand_as(idx_rank)
+                
+                # Confidence Loss Including Positive and Negative Examples
+
+                pos_idx = pos.view(batch*(inds[i+1]-inds[i]), ).unsqueeze(1).expand_as(conf_pred_batch_feat)
+                neg_idx = neg.view(batch*(inds[i+1]-inds[i]), ).unsqueeze(1).expand_as(conf_pred_batch_feat)
+                # conf_p = conf_pred_batch_feat[(pos_idx+neg_idx).gt(0)].view(-1,self.num_classes)
+                # targets_weighted = conf_pred_batch_feat[(pos+neg).gt(0)]
+            else:
+                raise NotImplementedError
+            # import pdb
+            # pdb.set_trace()
+            # cls loss
+            conf_pred_batch_feat_valid = conf_pred_batch_feat[(pos_idx+neg_idx).gt(0)].view(-1, self.num_classes)
+            anchor_label_batch_feat_valid = anchor_label_batch_feat[(pos+neg).gt(0)]
+            if anchor_label_batch_feat_valid.size()[0] > 0:
+                cls_feat_loss = F.cross_entropy(conf_pred_batch_feat_valid, anchor_label_batch_feat_valid, reduction='mean')
+                loss_conf.append(cls_feat_loss)
                 # print(i, conf_pred_batch_feat_valid.size(), anchor_label_batch_feat_valid.size())
             else:
                 print("No bg and fg")
@@ -228,6 +233,8 @@ class MultiTaskLoss(nn.Module):
             # if N_cls>0:
             #     cls_feat_loss = cls_feat_loss / float(N_cls)
             # loss_conf.append(cls_feat_loss)
+
+
 
 
             # loc loss

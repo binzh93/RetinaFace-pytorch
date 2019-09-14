@@ -193,6 +193,7 @@ class ResNet(nn.Module):
         x = self.fc(x)
         
         # return [c2, c3, c4, c5]
+        # print(c3.shape, c4.shape, c5.shape)
         return (c3, c4, c5)
         # return {"c3": c3, "c4": c4, "c5": c5}
         # return x

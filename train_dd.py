@@ -24,31 +24,34 @@ import torch.optim as optim
 import time
 import argparse
 
-from easydict import EasyDict as edict
-__C = edict()
-cfg = __C
+from configs.config import cfg
+
+
+# from easydict import EasyDict as edict
+# __C = edict()
+# cfg = __C
 
 # cfg.Landmark = True
-cfg.FACE_LANDMARK = True
+# cfg.FACE_LANDMARK = False
 # cfg.MIN_FACE = 0
 # cfg.USE_FLIPED = True
 
 
 
 parser = argparse.ArgumentParser(description='RetinaFace')
-parser.add_argument('--batch_size', default=16, type=int, help='Batch size for training')
+parser.add_argument('--batch_size', default=64, type=int, help='Batch size for training')
 parser.add_argument('--use_tensorboard', default=True, help='Log progress to TensorBoard')
-parser.add_argument('-max','--max_epoch', default=150, type=int, help='max epoch for retraining')
+parser.add_argument('-max','--max_epoch', default=300, type=int, help='max epoch for retraining')
 parser.add_argument('--cuda', default=True, type=bool, help='Use CUDA to train model')
-parser.add_argument('--num_workers', default=1, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--root', default="/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface", help='Dataset root directory path')
-parser.add_argument('--dataset_root', default="/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train", help='Dataset root directory path')
-parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
+parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--root', default="/data/zhubin/wider_face", help='Dataset root directory path')
+parser.add_argument('--dataset_root', default="/data/zhubin/wider_face/train", help='Dataset root directory path')
+parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
-parser.add_argument('--frequent', default=30, type=int, help='frequency of logging')
-parser.add_argument('--pretrained', default="weights/pretrained/resnet50_official_pretrain.pth", help='Pretrained model path')
-parser.add_argument('--arch', default="resnet50", type=str, help='Pretrained model path')
+parser.add_argument('--frequent', default=20, type=int, help='frequency of logging')
+# parser.add_argument('--pretrained', default="weights/pretrained/resnet50_official_pretrain.pth", help='Pretrained model path')
+# parser.add_argument('--arch', default="resnet50", type=str, help='Pretrained model path')
 
 parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
 parser.add_argument('--log_dir', default='log/', help='TensorBoard log directory ')
@@ -130,14 +133,17 @@ def train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_wri
         output = net(images)
         optimizer.zero_grad()
         
-
-        loss_conf, loss_loc, loss_landmark = criterion(output, anchors, [boxes, landmarks])
+        if cfg.FACE_LANDMARK:
+            loss_conf, loss_loc, loss_landmark = criterion(output, anchors, [boxes, landmarks])
+        else:
+            loss_conf, loss_loc = criterion(output, anchors, [boxes])
         # loss_conf, loss_loc = criterion(output, anchors, [boxes, landmarks])
         # loss_conf = criterion(output, anchors, [boxes, landmarks])
 
         loss = loss_conf[0] + loss_conf[1] + loss_conf[2] 
         loss += loss_loc[0] + loss_loc[1] + loss_loc[2] 
-        loss += loss_landmark[0] + loss_landmark[1] + loss_landmark[2] 
+        if cfg.FACE_LANDMARK:
+            loss += loss_landmark[0] + loss_landmark[1] + loss_landmark[2] 
         
         total_loss += loss.detach()
         loss_32_conf += loss_conf[0]
@@ -148,25 +154,25 @@ def train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_wri
         loss_16_loc += loss_loc[1]
         loss_8_loc += loss_loc[2]
 
-        loss_32_landmark += loss_landmark[0]
-        loss_16_landmark += loss_landmark[1]
-        loss_8_landmark += loss_landmark[2]
-
-        if (i+1) % args.frequent == 0:
-            print("Epoch[{}]  Batch [{}-{}]  total loss: {:4.6f}\t"\
-            "32_conf: {:4.6f}\t16_conf: {:4.6f}\t8_conf: {:4.6f}\t" \
-            "32_loc: {:4.6f}\t16_loc: {:4.6f}\t8_loc: {:4.6f}\t" \
-            "32_landmark: {:4.6f}\t16_landmark: {:4.6f}\t8_landmark: {:4.6f}".format(epoch, 0, i+1, total_loss.item()/(i+1), \
-            loss_32_conf.item()/(i+1), loss_16_conf.item()/(i+1), loss_8_conf.item()/(i+1), \
-            loss_32_loc.item()/(i+1), loss_16_loc.item()/(i+1), loss_8_loc.item()/(i+1), \
-            loss_32_landmark.item()/(i+1), loss_16_landmark.item()/(i+1), loss_8_landmark.item()/(i+1) ))
+        # loss_32_landmark += loss_landmark[0]
+        # loss_16_landmark += loss_landmark[1]
+        # loss_8_landmark += loss_landmark[2]
 
         # if (i+1) % args.frequent == 0:
         #     print("Epoch[{}]  Batch [{}-{}]  total loss: {:4.6f}\t"\
         #     "32_conf: {:4.6f}\t16_conf: {:4.6f}\t8_conf: {:4.6f}\t" \
-        #     "32_loc: {:4.6f}\t16_loc: {:4.6f}\t8_loc: {:4.6f}".format(epoch, 0, i+1, total_loss.item()/(i+1), \
+        #     "32_loc: {:4.6f}\t16_loc: {:4.6f}\t8_loc: {:4.6f}\t" \
+        #     "32_landmark: {:4.6f}\t16_landmark: {:4.6f}\t8_landmark: {:4.6f}".format(epoch, 0, i+1, total_loss.item()/(i+1), \
         #     loss_32_conf.item()/(i+1), loss_16_conf.item()/(i+1), loss_8_conf.item()/(i+1), \
-        #     loss_32_loc.item()/(i+1), loss_16_loc.item()/(i+1), loss_8_loc.item()/(i+1) ))
+        #     loss_32_loc.item()/(i+1), loss_16_loc.item()/(i+1), loss_8_loc.item()/(i+1), \
+        #     loss_32_landmark.item()/(i+1), loss_16_landmark.item()/(i+1), loss_8_landmark.item()/(i+1) ))
+
+        if (i+1) % args.frequent == 0:
+            print("Epoch[{}]  Batch [{}-{}]  total loss: {:4.6f}\t"\
+            "32_conf: {:4.6f}\t16_conf: {:4.6f}\t8_conf: {:4.6f}\t" \
+            "32_loc: {:4.6f}\t16_loc: {:4.6f}\t8_loc: {:4.6f}".format(epoch, 0, i+1, total_loss.item()/(i+1), \
+            loss_32_conf.item()/(i+1), loss_16_conf.item()/(i+1), loss_8_conf.item()/(i+1), \
+            loss_32_loc.item()/(i+1), loss_16_loc.item()/(i+1), loss_8_loc.item()/(i+1) ))
 
         # if (i+1) % args.frequent == 0:
         #     print("Epoch[{}]  Batch [{}-{}]  total loss: {:4.6f}\t"\
@@ -184,9 +190,9 @@ def train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_wri
     print("Epoch[{}]  loss_32_loc: {:.6f}".format(epoch, loss_32_loc.item()/(i+1)))
     print("Epoch[{}]  loss_16_loc: {:.6f}".format(epoch, loss_16_loc.item()/(i+1)))
     print("Epoch[{}]  loss_8_loc: {:.6f}".format(epoch, loss_8_loc.item()/(i+1)))
-    print("Epoch[{}]  loss_32_landmark: {:.6f}".format(epoch, loss_32_landmark.item()/(i+1)))
-    print("Epoch[{}]  loss_16_landmark: {:.6f}".format(epoch, loss_16_landmark.item()/(i+1)))
-    print("Epoch[{}]  loss_8_landmark: {:.6f}".format(epoch, loss_8_landmark.item()/(i+1)))
+    # print("Epoch[{}]  loss_32_landmark: {:.6f}".format(epoch, loss_32_landmark.item()/(i+1)))
+    # print("Epoch[{}]  loss_16_landmark: {:.6f}".format(epoch, loss_16_landmark.item()/(i+1)))
+    # print("Epoch[{}]  loss_8_landmark: {:.6f}".format(epoch, loss_8_landmark.item()/(i+1)))
     print("Epoch[{}]  time comsuming: {}".format(epoch, (t_end - t_begin)))     
     if train_writer is not None:
         train_writer.add_scalar('total_loss', total_loss.item()/(i+1), epoch)
@@ -196,9 +202,9 @@ def train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_wri
         train_writer.add_scalar('loc_s32_loss', loss_32_loc.item()/(i+1), epoch)
         train_writer.add_scalar('loc_s16_loss', loss_16_loc.item()/(i+1), epoch)
         train_writer.add_scalar('loc_s8_loss', loss_8_loc.item()/(i+1), epoch)
-        train_writer.add_scalar('landmark_s32_loss', loss_32_landmark.item()/(i+1), epoch)
-        train_writer.add_scalar('landmark_s16_loss', loss_16_landmark.item()/(i+1), epoch)
-        train_writer.add_scalar('landmark_s8_loss', loss_8_landmark.item()/(i+1), epoch)
+        # train_writer.add_scalar('landmark_s32_loss', loss_32_landmark.item()/(i+1), epoch)
+        # train_writer.add_scalar('landmark_s16_loss', loss_16_landmark.item()/(i+1), epoch)
+        # train_writer.add_scalar('landmark_s8_loss', loss_8_landmark.item()/(i+1), epoch)
 
     # print("=========epoch {}=========".format(epoch+1))
     # print("time comsuming: {}".format((t2-t1)))     
@@ -218,15 +224,15 @@ def train_net(train_loader, net, criterion, optimizer, epoch, anchors, train_wri
 
     
 def main():
-    if args.arch == "resnet50":
+    if cfg.ARCH == "resnet50":
         backbone = resnet50()
-    elif args.arch == "resnet18":
+    elif cfg.ARCH == "resnet18":
         backbone = resnet18()
     else:
         raise NotImplementedError
     
 
-    net = RetinaFace(backbone, pretrained_model_path=args.pretrained)
+    net = RetinaFace(backbone, pretrained_model_path=cfg.PRETRAIN_WEIGHTS)
     if torch.cuda.is_available():
         if args.cuda:
             # torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -246,9 +252,10 @@ def main():
         if args.log_dir:
             if not osp.exists(args.log_dir):
                 os.mkdir(args.log_dir)
-        train_writer = SummaryWriter(log_dir="{}".format(args.log_dir), comment=args.arch)
+        train_writer = SummaryWriter(log_dir="{}".format(args.log_dir), comment=cfg.ARCH)
         
         # dummy_input = torch.rand(1, 3, 640, 640).cuda()
+        # train_writer.add_graph(net, (dummy_input, ))  # torch 1.1 is sucessful
         # train_writer.add_graph(backbone, (dummy_input, ))
 
     train_dataset = WiderFaceDetection(root_path=args.root, data_path=args.dataset_root, phase="train", 
@@ -272,11 +279,11 @@ def main():
         lr = adjust_learning_rate(optimizer=optimizer, 
                                   epoch=epoch, 
 #                                   step_epoch=[55, 68, 80], 
-                                  step_epoch=[55, 80, 100], 
-                                  gamma=0.1, 
+                                  step_epoch=[100, 180, 230], 
+                                  gamma=0.5, 
                                   base_lr=args.lr,  # 0.001
                                   warm_up_end_lr=0.01, 
-#                                   warmup_epoch=5
+                                #   warmup_epoch=5
                                  )
         print("Epoch[{}]  lr: {}".format(epoch, lr))
         if args.use_tensorboard:
@@ -314,6 +321,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print(cfg)
     Training = True
     if Training:
         main()

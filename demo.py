@@ -10,12 +10,13 @@ from models.resnet import *
 from models.retina_face import *
 from utils.nms_wrapper import nms, soft_nms
 
+from configs.config import cfg
 
-from easydict import EasyDict as edict
-__C = edict()
-cfg = __C
+# from easydict import EasyDict as edict
+# __C = edict()
+# cfg = __C
 
-cfg.FACE_LANDMARK = True
+# cfg.FACE_LANDMARK = False
 # cfg.SCALES = (640, 640)
 # cfg.CLIP = False
 # cfg.RPN_FEAT_STRIDE = [8, 16, 32]
@@ -28,9 +29,9 @@ parser = argparse.ArgumentParser(description='Retinaface Testing')
 # parser.add_argument('-m', '--trained_model', default=None, type=str, help='Trained state_dict file path to open')
 # parser.add_argument('--test', action='store_true', help='to submit a test file')
 # parser.add_argument('--model_path', default="weights/retinaface_epoch100_201908220041.pth", type=str, help='Score threshold for classification')
-parser.add_argument('--model_path', default="weights/retinaface_epoch110_201908260852.pth", type=str, help='Score threshold for classification')
-parser.add_argument('--score_thresh', default=0.99, type=float, help='Score threshold for classification')
-parser.add_argument('--nms_overlap', default=0.1, type=float, help='NMS Score threshold for classification')
+parser.add_argument('--model_path', default="weights/retinaface_epoch10_201909141420.pth", type=str, help='Score threshold for classification')
+parser.add_argument('--score_thresh', default=0.351, type=float, help='Score threshold for classification')
+parser.add_argument('--nms_overlap', default=0.4, type=float, help='NMS Score threshold for classification')
 
 parser.add_argument('--gpu', default=False, help='use gpu or not')
 args = parser.parse_args()
@@ -52,12 +53,14 @@ def test_net(net, testset):
             # image = testset.pull_image(idx)  #  TODO
             image = cv2.imread(testset[idx])   #  TODO
 
-#             target_size = 1600
-#             max_size = 2150
-#             target_size = 640
-#             max_size = 900
-            target_size = 640
-            max_size = 640
+            target_size = 1600
+            max_size = 2150
+            # target_size = 2000
+            # max_size = 3000
+            # target_size = 640
+            # max_size = 900
+            # target_size = 640
+            # max_size = 640
             im_shape = image.shape  # H, W, C
             
             im_size_min = min(im_shape[0: 2])
@@ -92,7 +95,7 @@ def test_net(net, testset):
                     scores, boxes, landmarks = detector.forward(net_out, im_tensor.shape[2: ])
                     # scores, boxes, landmarks = detector.forward(net_out)
                 else:
-                    scores, boxes = detector.forward(net_out)
+                    scores, boxes = detector.forward(net_out, im_tensor.shape[2: ])
                 scores = scores.cpu().numpy()
                 boxes = boxes.cpu().numpy() / im_scale
                 # boxes = boxes.cpu().numpy()
@@ -116,9 +119,9 @@ def test_net(net, testset):
                     c_dets = np.hstack((c_boxes, c_scores[:, np.newaxis])).astype(np.float32, copy=False)
                     if cfg.FACE_LANDMARK:
                         c_landmarks = landmarks[inds]
-
+                    # print(c_dets)
                     keep = nms(c_dets, args.nms_overlap, force_cpu=True)  # TODO   soft_nms
-                    box_num = 50
+                    box_num = 150 #50
                     keep = keep[: box_num] # keep only the highest boxes
                     c_dets = c_dets[keep, :]
                     all_boxes[cls][idx] = c_dets
@@ -148,7 +151,7 @@ def test_net(net, testset):
                     print(sf, st)
                     # print(lmks[jj])
                     # print()
-#                     cv2.rectangle(image, sf, st, (0, 0, 255), thickness=2)
+                    cv2.rectangle(image, sf, st, (0, 0, 255), thickness=2)
                     # print((lmks[jj][0, 0],lmks[jj][0, 1]))
                     # print((lmks[jj][1, 0],lmks[jj][1, 1]))
                     # print((lmks[jj][2, 0],lmks[jj][2, 1]))
@@ -159,11 +162,12 @@ def test_net(net, testset):
 #                     cv2.circle(image,(lmks[jj][2, 0],lmks[jj][2, 1]),radius=1,color=(255,0,0),thickness=2)
 #                     cv2.circle(image,(lmks[jj][3, 0],lmks[jj][3, 1]),radius=1,color=(0,255,255),thickness=2)
 #                     cv2.circle(image,(lmks[jj][4, 0],lmks[jj][4, 1]),radius=1,color=(255,255,0),thickness=2)
-                    cv2.circle(image,(lmks[jj][0],lmks[jj][1]),radius=1,color=(0,0,255),thickness=2)
-                    cv2.circle(image,(lmks[jj][2],lmks[jj][3]),radius=1,color=(0,255,0),thickness=2)
-                    cv2.circle(image,(lmks[jj][4],lmks[jj][5]),radius=1,color=(255,0,0),thickness=2)
-                    cv2.circle(image,(lmks[jj][6],lmks[jj][7]),radius=1,color=(0,255,255),thickness=2)
-                    cv2.circle(image,(lmks[jj][8],lmks[jj][9]),radius=1,color=(255,255,0),thickness=2)
+
+                    # cv2.circle(image,(lmks[jj][0],lmks[jj][1]),radius=1,color=(0,0,255),thickness=2)
+                    # cv2.circle(image,(lmks[jj][2],lmks[jj][3]),radius=1,color=(0,255,0),thickness=2)
+                    # cv2.circle(image,(lmks[jj][4],lmks[jj][5]),radius=1,color=(255,0,0),thickness=2)
+                    # cv2.circle(image,(lmks[jj][6],lmks[jj][7]),radius=1,color=(0,255,255),thickness=2)
+                    # cv2.circle(image,(lmks[jj][8],lmks[jj][9]),radius=1,color=(255,255,0),thickness=2)
                 cv2.imwrite("images/img.jpg", image)
                 # if roi['flipped']:
                 #     cv2.imwrite("images/flipped_" + osp.basename(roi['image_path']), img)
@@ -214,7 +218,22 @@ def main():
     # dataloader = ['/home/dc2-user/zhubin/wider_face/val/images/12--Group/12_Group_Team_Organized_Group_12_Group_Team_Organized_Group_12_868.jpg']
 #     dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/15--Stock_Market/15_Stock_Market_Stock_Market_15_479.jpg']
 #     dataloader = ['/workspace/mnt/group/algorithm/zhubin/cache_file/RetinaFace/data/retinaface/train/images/0--Parade/0_Parade_marchingband_1_1031.jpg']
-    dataloader = ['/workspace/mnt/group/algorithm/zhubin/RetinaFace-pytorch/images/et_15_479.jpg']
+    # dataloader = ['/data/zhubin/wider_face/val/images/12--Group/12_Group_Team_Organized_Group_12_Group_Team_Organized_Group_12_868.jpg']
+    
+    # dataloader = ['images/49_Greeting_peoplegreeting_49_992.jpg']
+    # dataloader = ['images/49_Greeting_peoplegreeting_49_877.jpg']
+    # dataloader = ['images/59_peopledrivingcar_peopledrivingcar_59_925.jpg']
+    # dataloader = ['images/ju1.jpeg']
+    dataloader = ['images/timg.jpeg']
+    # dataloader = ['images/聚餐_68.jpg']
+    # dataloader = ['images/聚餐_24.jpg']
+    # dataloader = ['images/聚餐_47.jpeg']
+    # dataloader = ['images/61_Street_Battle_streetfight_61_925.jpg']
+    # dataloader = ['images/61_Street_Battle_streetfight_61_5.jpg']
+   
+    
+
+    
     test_net(net, dataloader)
 
 

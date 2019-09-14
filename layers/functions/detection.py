@@ -9,7 +9,7 @@ from easydict import EasyDict as edict
 __C = edict()
 cfg = __C
 
-cfg.FACE_LANDMARK = True
+cfg.FACE_LANDMARK = False
 cfg.SCALES = (640, 640)
 cfg.CLIP = False
 cfg.RPN_FEAT_STRIDE = [8, 16, 32]
@@ -102,6 +102,9 @@ def generate_anchors(base_size=16, ratios=[0.5, 1, 2], scales=np.array([32.0, 16
 
 def bbox_decode(boxes_anchor, boxes_deltas):
     print("dsangds))))))JJJJJJJ")
+    # import pdb
+    # pdb.set_trace()
+    print(boxes_anchor.size(), boxes_deltas.size())
     widths = boxes_anchor[:, 2] - boxes_anchor[:, 0] + 1.0
     heights = boxes_anchor[:, 3] - boxes_anchor[:, 1] + 1.0
     a_cx = boxes_anchor[:, 0] + 0.5 * (widths - 1.0)
@@ -164,6 +167,7 @@ class Detect(Function):
         #     self.base_anchors_num.appennd(base_anchors_num_feat)
         self.feat_strides = cfg.RPN_FEAT_STRIDE
         self.rpn_anchor = cfg.RPN_ANCHOR 
+        self.base_nums = 2
         
 
 # base_anchors = generate_anchors(base_size=base_size, ratios=list(ratios), scales=np.array(scales, np.float32), stride=feat_stride)
@@ -192,14 +196,31 @@ class Detect(Function):
         loc_list = list()
         if cfg.FACE_LANDMARK:
             landmark_list = list()
-
+        print("H, W", H, W)
+        total_anchors = 0
         for i in range(len(self.feat_strides)):
-            H_, W_ = round(H/self.feat_strides[i] + 0.5), round(W/self.feat_strides[i] + 0.5)
-            print("H_, w_: ", H_, W_)
-            print(conf_pred_batch[i].size(), loc_pred_batch[i].size(), landmark_pred_batch[i].size())
-            conf_pred_batch[i] = conf_pred_batch[i].reshape(H_, W_, self.num_classes*2)
-            loc_pred_batch[i] = loc_pred_batch[i].reshape(H_, W_, 4*2)
-            landmark_pred_batch[i] = landmark_pred_batch[i].reshape(H_, W_, 10*2)
+            print(self.feat_strides[i])
+            total_anchors += int(H/self.feat_strides[i] + 0.5) * int(W/self.feat_strides[i] + 0.5)
+
+
+        # conf_pred_batch_new = torch.empty()
+        # conf_pred_batch_new = torch.empty_like(conf_pred_batch)
+        # print()
+        # import pdb
+        # odb.set_trace()
+        print("dasdasdasda------")
+        print(conf_pred_batch[0].size(), conf_pred_batch[1].size(), conf_pred_batch[2].size())
+        for i in range(len(self.feat_strides)):
+            # print()
+            feat_height, feat_width = conf_pred_batch[i].size(1), conf_pred_batch[i].size(2)
+            # feat_height, feat_width = int(H/self.feat_strides[i] + 0.5), int(W/self.feat_strides[i] + 0.5)
+            print("cccc: ", feat_height, feat_width)
+            # print("H_, w_: ", H_, W_)
+            # print(conf_pred_batch[i].size(), loc_pred_batch[i].size(), landmark_pred_batch[i].size())
+            # conf_pred_batch_feat = conf_pred_batch[i].reshape(H_, W_, self.num_classes*2)
+            # loc_pred_batch[i] = loc_pred_batch[i].reshape(H_, W_, 4*2)
+            # if cfg.FACE_LANDMARK:
+            #     landmark_pred_batch[i] = landmark_pred_batch[i].reshape(H_, W_, 10*2)
 
 
             # TODO  need to change retina_face changed multitask need to change
@@ -210,10 +231,13 @@ class Detect(Function):
             ratios = self.rpn_anchor[stride_str]['RATIOS']
             scales = self.rpn_anchor[stride_str]['SCALES']
             # feat_height, feat_width = self.rpn_anchor[stride_str]['FEAT_MAP_SIZE']
-            print("rawdadsa: ", conf_pred_batch[i].size())
-            feat_height, feat_width = conf_pred_batch[i].size(0), conf_pred_batch[i].size(1)
+
+            # print("rawdadsa: ", conf_pred_batch[i].size())
+            # feat_height, feat_width = conf_pred_batch[i].size(0), conf_pred_batch[i].size(1)
 
             base_anchors = generate_anchors(base_size=base_size, ratios=list(ratios), scales=np.array(scales, np.float32), stride=feat_stride)
+            # import pdb
+            # pdb.set_trace()
             # print(base_anchors)
             feat_anchors = anchors_plane(feat_height, feat_width, feat_stride, base_anchors)
             feat_anchors_t = torch.Tensor(feat_anchors)
@@ -222,10 +246,12 @@ class Detect(Function):
             
             # Decode
             scores = F.softmax(conf_pred_batch[i].view(-1, self.num_classes))
-            print(feat_anchors_t.view(-1, 4).shape)
-            print(loc_pred_batch[i].view(-1, 4).shape)
+            # print(feat_anchors_t.view(-1, 4).shape)
+            # print(loc_pred_batch[i].view(-1, 4).shape)
+            print("loc_pred_batch[i]", loc_pred_batch[i].shape)
+            print("feat_anchors_t: ", feat_anchors_t.shape)
             decoded_boxes = bbox_decode(feat_anchors_t.view(-1, 4), loc_pred_batch[i].view(-1, 4))
-            print(decoded_boxes.shape)
+            # print(decoded_boxes.shape)
             if cfg.FACE_LANDMARK:
                 decoded_landmarks = landmark_decode(feat_anchors_t.view(-1, 4), landmark_pred_batch[i].view(-1, 10))  # TODO
 
